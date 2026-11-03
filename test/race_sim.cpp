@@ -1,8 +1,8 @@
 /*
- * neo-pi - host test of the beam racing logic (src/raster.cpp, src/race.cpp)
+ * nes-pi - host test of the beam racing logic (src/raster.cpp, src/race.cpp)
  * against a simulated HVS and a simulated emulator.
  *
- *   g++ -O2 -DNEOPI_HOST -I src -o race_sim test/race_sim.cpp src/raster.cpp src/race.cpp
+ *   g++ -O2 -DNESPI_HOST -I src -o race_sim test/race_sim.cpp src/raster.cpp src/race.cpp
  *   ./race_sim [seconds] [emu_us_per_line] [spike_us] [fifo_lines]
  *
  * HVS model (1080p60, CEA timings: 1125 lines, 2200 x 1125 at 148.5 MHz):

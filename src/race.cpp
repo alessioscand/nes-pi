@@ -1,5 +1,5 @@
 /*
- * neo-pi - beam racing (see race.h)
+ * nes-pi - beam racing (see race.h)
  */
 #include "race.h"
 

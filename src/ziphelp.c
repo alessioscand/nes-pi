@@ -1,11 +1,11 @@
 /*
- * neo-pi - extract one file from a zip held in memory (miniz)
+ * nes-pi - extract one file from a zip held in memory (miniz)
  */
 #include <stddef.h>
 #include <string.h>
 #include "miniz.h"
 
-void *neopi_zip_extract (const void *pZip, size_t nZipSize, const char *pName, size_t *pSize)
+void *nespi_zip_extract (const void *pZip, size_t nZipSize, const char *pName, size_t *pSize)
 {
     mz_zip_archive zip;
     memset (&zip, 0, sizeof zip);
@@ -16,14 +16,14 @@ void *neopi_zip_extract (const void *pZip, size_t nZipSize, const char *pName, s
     return p;
 }
 
-/* PNG of an RGB image (3 bytes per pixel); free the result with neopi_png_free */
-void *neopi_png_encode (const void *pRGB, int nWidth, int nHeight, size_t *pSize)
+/* PNG of an RGB image (3 bytes per pixel); free the result with nespi_png_free */
+void *nespi_png_encode (const void *pRGB, int nWidth, int nHeight, size_t *pSize)
 {
     return tdefl_write_image_to_png_file_in_memory_ex (pRGB, nWidth, nHeight, 3, pSize,
                                                         6, MZ_FALSE);
 }
 
-void neopi_png_free (void *p)
+void nespi_png_free (void *p)
 {
     mz_free (p);
 }

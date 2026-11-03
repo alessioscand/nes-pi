@@ -1,5 +1,5 @@
 /*
- * neo-pi - where the HDMI picture is being read, for beam racing (Pi 4)
+ * nes-pi - where the HDMI picture is being read, for beam racing (Pi 4)
  *
  * The Pi's hardware scaler (HVS) builds the HDMI picture one line at a time,
  * reading our framebuffer as it goes; SCALER_DISPSTATX(channel) bits 11:0 say
@@ -24,7 +24,7 @@
 #ifndef RASTER_H
 #define RASTER_H
 
-#ifdef NEOPI_HOST
+#ifdef NESPI_HOST
 #include <stdint.h>
 #include <stddef.h>
 typedef uint32_t u32;

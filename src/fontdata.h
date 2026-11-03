@@ -1,8 +1,8 @@
 /*
- * neo-pi - built-in menu font
+ * nes-pi - built-in menu font
  */
-#ifndef NEOPI_FONTDATA_H
-#define NEOPI_FONTDATA_H
+#ifndef NESPI_FONTDATA_H
+#define NESPI_FONTDATA_H
 
 #ifdef __cplusplus
 extern "C" {

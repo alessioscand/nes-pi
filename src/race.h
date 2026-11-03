@@ -1,5 +1,5 @@
 /*
- * neo-pi - beam racing (Pi 4)
+ * nes-pi - beam racing (Pi 4)
  *
  * One emulated frame per HDMI frame, raced against the HVS (see raster.h):
  *

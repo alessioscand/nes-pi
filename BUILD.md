@@ -1,6 +1,6 @@
-# nes-pi - how to build (version 0.1.0-test2)
+# nes-pi - how to build (version 0.1.0)
 
-Build host: Linux x86_64. Same set-up as neo-pi 0.7.
+Build host: Linux x86_64.
 
 1. **Toolchain**: xPack aarch64-none-elf-gcc 14.2.1-1.1 (newlib, libstdc++) in `toolchain/`
    (https://github.com/xpack-dev-tools/aarch64-none-elf-gcc-xpack/releases).
@@ -51,5 +51,5 @@ Build host: Linux x86_64. Same set-up as neo-pi 0.7.
 
 ## Testing without hardware
 QEMU `-M raspi3b` with a Circle build using `-DNO_SDHOST -DNO_SCREEN_DMA_BURST_LENGTH`;
-`-DNEOPI_FAKEPAD` turns the USB keyboard into a pad. QEMU has no HVS, so beam racing
+`-DNESPI_FAKEPAD` turns the USB keyboard into a pad. QEMU has no HVS, so beam racing
 is reported "not available" and the normal double buffer is used.

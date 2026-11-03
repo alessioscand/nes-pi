@@ -4,7 +4,7 @@
  */
 #include "kernel.h"
 #include "fontdata.h"
-#include "neopi.h"
+#include "nespi.h"
 #include "profile.h"
 #include "raster.h"
 #include "race.h"
@@ -22,9 +22,9 @@
 extern "C" {
 int snprintf (char *pBuffer, size_t nSize, const char *pFormat, ...);
 int vsnprintf (char *pBuffer, size_t nSize, const char *pFormat, va_list Args);
-void *neopi_zip_extract (const void *pZip, size_t nZipSize, const char *pName, size_t *pSize);
-void *neopi_png_encode (const void *pRGB, int nWidth, int nHeight, size_t *pSize);
-void neopi_png_free (void *p);
+void *nespi_zip_extract (const void *pZip, size_t nZipSize, const char *pName, size_t *pSize);
+void *nespi_png_encode (const void *pRGB, int nWidth, int nHeight, size_t *pSize);
+void nespi_png_free (void *p);
 }
 
 #define NESPI_DIR	"SD:/nespi"
@@ -316,7 +316,7 @@ static u32 HvsRead (unsigned nOffset)
 {
 	return *(volatile u32 *) (uintptr) (HVS_BASE + nOffset);
 }
-// beamracing= in neopi.cfg: -1 default (on), 0 off, 1 on
+// beamracing= in nespi.cfg: -1 default (on), 0 off, 1 on
 static int s_nRaceCfg = -1;
 static boolean s_bRaceReady = FALSE;	// calibrated at start-up
 static boolean s_bRaceGame = FALSE;	// racing in this game (until it gives up)
@@ -357,7 +357,7 @@ static void RaceRowDone (unsigned nRow)
 
 // ---- C interface for the C parts -----------------------------------------
 
-extern "C" void neopi_log (const char *pFormat, ...)
+extern "C" void nespi_log (const char *pFormat, ...)
 {
 	char Buffer[160];
 	va_list Args;
@@ -367,7 +367,7 @@ extern "C" void neopi_log (const char *pFormat, ...)
 	CKernel::Get ()->Log (Buffer, COLOR_TEXT);
 }
 
-extern "C" void neopi_fatal (int nCode, const char *pFormat, ...)
+extern "C" void nespi_fatal (int nCode, const char *pFormat, ...)
 {
 	char Buffer[160];
 	va_list Args;
@@ -674,13 +674,13 @@ void CKernel::Fatal (int nCode, const char *pMessage)
 
 	switch (nCode)
 	{
-	case NEOPI_ERR_SD:
+	case NESPI_ERR_SD:
 		Log ("  Check that the card is FAT32 and that the files are in its root.", COLOR_TEXT);
 		break;
-	case NEOPI_ERR_GAME:
+	case NESPI_ERR_GAME:
 		Log ("  Copy at least one .nes game into the nespi folder.", COLOR_TEXT);
 		break;
-	case NEOPI_ERR_MEM:
+	case NESPI_ERR_MEM:
 		Log ("  Not enough memory.", COLOR_TEXT);
 		break;
 	default:
@@ -859,7 +859,7 @@ void CKernel::SetupCoreOnce (void)
 	s_pVideoOut = &m_Video;
 	if (!nes_init (SAMPLE_RATE))
 	{
-		Fatal (NEOPI_ERR_CORE, nes_last_error ());
+		Fatal (NESPI_ERR_CORE, nes_last_error ());
 	}
 	nes_set_battery_io (BatteryLoad, BatterySave);
 	nes_set_line_hook (NesLineHook);
@@ -1122,7 +1122,7 @@ const char *CKernel::SaveScreenshot (void)
 		*d++ = (u8) c;
 	}
 	size_t nSize = 0;
-	void *pPng = neopi_png_encode (RGB, NES_W, nShotH, &nSize);
+	void *pPng = nespi_png_encode (RGB, NES_W, nShotH, &nSize);
 	if (pPng == 0)
 	{
 		return 0;
@@ -1135,7 +1135,7 @@ const char *CKernel::SaveScreenshot (void)
 		bOK = f_write (&File, pPng, nSize, &nWritten) == FR_OK && nWritten == nSize;
 		f_close (&File);
 	}
-	neopi_png_free (pPng);
+	nespi_png_free (pPng);
 
 	char Line[200];
 	snprintf (Line, sizeof Line, "  screenshot %s: %s", Name, bOK ? "saved" : "FAILED");
@@ -1264,7 +1264,7 @@ void CKernel::Benchmark (void)
 		nPos += snprintf (Report + nPos, sizeof Report - nPos, "%s\r\n", Line); } while (0)
 
 	snprintf (Line, sizeof Line, "nes-pi %s - %s, %u MB, CPU %u MHz, %u C",
-		  NEOPI_VERSION, pInfo->GetMachineName (), pInfo->GetRAMSize (),
+		  NESPI_VERSION, pInfo->GetMachineName (), pInfo->GetRAMSize (),
 		  m_CPUThrottle.GetClockRate () / 1000000, m_CPUThrottle.GetTemperature ());
 	REPORT (COLOR_TEXT);
 	snprintf (Line, sizeof Line, "Game: %s (measured after %u s of play, for %u s)",
@@ -1531,7 +1531,7 @@ void CKernel::ApplyVideoMode (void)
 {
 	if (!m_Video.SetGameMode (m_nFilter, m_bHVS, s_nTvMode != NTSC_OFF))
 	{
-		Fatal (NEOPI_ERR_FB, "cannot set up the game framebuffer");
+		Fatal (NESPI_ERR_FB, "cannot set up the game framebuffer");
 	}
 	m_Video.SetSource (s_UISource);
 	char Tag[8];
@@ -1691,7 +1691,7 @@ void CKernel::RunSystemMenu (void)
 
 	CMachineInfo *pInfo = CMachineInfo::Get ();
 	char Footer[48];
-	snprintf (Footer, sizeof Footer, "NES-PI " NEOPI_VERSION "  PI %u  %u C", pInfo->GetModelMajor (),
+	snprintf (Footer, sizeof Footer, "NES-PI " NESPI_VERSION "  PI %u  %u C", pInfo->GetModelMajor (),
 		  m_CPUThrottle.GetTemperature ());
 
 	while (1)
@@ -1702,7 +1702,7 @@ void CKernel::RunSystemMenu (void)
 		}
 		if (nFrame % 120 == 0)
 		{
-			snprintf (Footer, sizeof Footer, "NES-PI " NEOPI_VERSION "  PI %u  %u C", pInfo->GetModelMajor (),
+			snprintf (Footer, sizeof Footer, "NES-PI " NESPI_VERSION "  PI %u  %u C", pInfo->GetModelMajor (),
 				  m_CPUThrottle.GetTemperature ());
 		}
 
@@ -2159,7 +2159,7 @@ void CKernel::RunCredits (void)
 		{
 			return;
 		}
-		m_pUI->DrawCredits (NEOPI_VERSION);
+		m_pUI->DrawCredits (NESPI_VERSION);
 		ShowUIFrame ();
 	}
 }
@@ -2801,12 +2801,12 @@ TShutdownMode CKernel::Run (void)
 {
 	if (!m_bVideoOK)
 	{
-		Fatal (NEOPI_ERR_FB, "cannot set up the HDMI output");
+		Fatal (NESPI_ERR_FB, "cannot set up the HDMI output");
 	}
 
 	char Line[180];
 	Log ("nes-pi - bare metal NES emulator", COLOR_TITLE);
-	snprintf (Line, sizeof Line, "Version %s, built %s %s", NEOPI_VERSION, __DATE__, __TIME__);
+	snprintf (Line, sizeof Line, "Version %s, built %s %s", NESPI_VERSION, __DATE__, __TIME__);
 	Log (Line, COLOR_DIM);
 
 	CMachineInfo *pInfo = CMachineInfo::Get ();
@@ -2822,11 +2822,11 @@ TShutdownMode CKernel::Run (void)
 	// SD card
 	if (!m_EMMC.Initialize ())
 	{
-		Fatal (NEOPI_ERR_SD, "SD card not initialised");
+		Fatal (NESPI_ERR_SD, "SD card not initialised");
 	}
 	if (f_mount (&m_FileSystem, "SD:", 1) != FR_OK)
 	{
-		Fatal (NEOPI_ERR_SD, "cannot read the SD card file system");
+		Fatal (NESPI_ERR_SD, "cannot read the SD card file system");
 	}
 	m_bSDOK = TRUE;
 	f_mkdir (NESPI_DIR);
@@ -2843,7 +2843,7 @@ TShutdownMode CKernel::Run (void)
 	Log (Line, m_nGames ? COLOR_OK : COLOR_ERR);
 	if (m_nGames == 0)
 	{
-		Fatal (NEOPI_ERR_GAME, "no .nes file in the nespi folder");
+		Fatal (NESPI_ERR_GAME, "no .nes file in the nespi folder");
 	}
 
 	// USB and audio

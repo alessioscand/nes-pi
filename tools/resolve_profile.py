@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""neo-pi - turn neopi/PROFILE.TXT into time per function and per part.
+"""nes-pi - turn nespi/PROFILE.TXT into time per function and per part.
 
 Usage: resolve_profile.py <kernel .elf that produced the profile> <PROFILE.TXT> [top N]
 

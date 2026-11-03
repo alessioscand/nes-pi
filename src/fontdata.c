@@ -1,5 +1,5 @@
 /*
- * neo-pi - menu font: 8x8, characters 0x20-0x7F, bit 7 = left pixel.
+ * nes-pi - menu font: 8x8, characters 0x20-0x7F, bit 7 = left pixel.
  * "Matinee" from the ZX Origins collection by Damien Guard
  * (https://damieng.com/typography/zx-origins/), free for use in games
  * with credit. Character 0x7F is replaced with a degree sign drawn for neo-pi.

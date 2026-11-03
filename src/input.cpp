@@ -2,7 +2,7 @@
  * nes-pi - USB gamepads and keyboard
  */
 #include "input.h"
-#include "neopi.h"
+#include "nespi.h"
 #include <circle/usb/usbhid.h>
 #include <circle/usb/usbdevice.h>
 #include <circle/util.h>
@@ -50,7 +50,7 @@ CInput::CInput (CUSBHCIDevice *pUSB, CDeviceNameService *pNames)
 	s_KeyState = 0;
 }
 
-#ifdef NEOPI_FAKEPAD
+#ifdef NESPI_FAKEPAD
 // QEMU has no USB gamepad: a fake one in slot 0, driven by the keyboard
 // (arrows = hat, Q W E R T Y U I O P = buttons 1-10), id 1234:5678
 #define FAKE_PAD	((CUSBGamePadDevice *) 1)
@@ -59,7 +59,7 @@ static TGamePadState s_FakeState;
 
 void CInput::UpdateDevices (void)
 {
-#ifdef NEOPI_FAKEPAD
+#ifdef NESPI_FAKEPAD
 	if (m_pPad[0] == 0)
 	{
 		memset (&s_FakeState, 0, sizeof s_FakeState);
@@ -78,7 +78,7 @@ void CInput::UpdateDevices (void)
 		m_Rest[0].hats[0] = -1;
 		s_Last[0] = s_FakeState;
 		UpdateSlotMap (0);
-		neopi_log ("Fake pad 1 (QEMU): 1234:5678, %s",
+		nespi_log ("Fake pad 1 (QEMU): 1234:5678, %s",
 			   s_SlotMap[0] >= 0 ? "controls set up" : "controls to set up");
 	}
 #endif
@@ -116,7 +116,7 @@ void CInput::UpdateDevices (void)
 		s_Last[i] = m_Rest[i];
 		s_bGotReport[i] = FALSE;
 		UpdateSlotMap (i);
-		neopi_log ("Pad %u connected: %04x:%04x, %s, %d buttons, %d hats, %d axes, %s",
+		nespi_log ("Pad %u connected: %04x:%04x, %s, %d buttons, %d hats, %d axes, %s",
 			   i + 1, GetVendor (i), GetProduct (i),
 			   (s_PadProps[i] & GamePadPropertyIsKnown) ? "known layout" : "generic HID",
 			   pState ? pState->nbuttons : -1, pState ? pState->nhats : -1,
@@ -124,7 +124,7 @@ void CInput::UpdateDevices (void)
 			   s_SlotMap[i] >= 0 ? "controls set up" : "controls to set up");
 		for (int a = 0; pState && a < pState->naxes && a < 8; a++)
 		{
-			neopi_log ("  axis %d: %d..%d, at rest %d", a, pState->axes[a].minimum,
+			nespi_log ("  axis %d: %d..%d, at rest %d", a, pState->axes[a].minimum,
 				   pState->axes[a].maximum, pState->axes[a].value);
 		}
 
@@ -137,7 +137,7 @@ void CInput::UpdateDevices (void)
 		m_pKeyboard = (CUSBKeyboardDevice *) m_pNames->GetDevice ("ukbd1", FALSE);
 		if (m_pKeyboard != 0)
 		{
-			neopi_log ("USB keyboard connected");
+			nespi_log ("USB keyboard connected");
 			m_pKeyboard->RegisterRemovedHandler (KeyboardRemovedHandler, this);
 			m_pKeyboard->RegisterKeyStatusHandlerRaw (KeyboardRawHandler);
 		}
@@ -332,7 +332,7 @@ void CInput::FlushDiagnostics (void)
 	while (m_nRawOut != s_nRawIn)
 	{
 		const TRaw &r = s_Raw[m_nRawOut % RawSize];
-		neopi_log ("  pad %u: buttons 0x%x hat %d axes %d %d %d %d -> nes-pi 0x%x",
+		nespi_log ("  pad %u: buttons 0x%x hat %d axes %d %d %d %d -> nes-pi 0x%x",
 			   r.nPad + 1, r.nButtons, r.nHat, r.nAx0, r.nAx1, r.nAx2, r.nAx3, r.nMapped);
 		m_nRawOut++;
 	}
@@ -385,7 +385,7 @@ void CInput::KeyboardRawHandler (unsigned char ucModifiers, const unsigned char 
 	}
 	s_KeyState = n;
 
-#ifdef NEOPI_FAKEPAD
+#ifdef NESPI_FAKEPAD
 	static const unsigned char Btn[10] = {0x14, 0x1A, 0x08, 0x15, 0x17, 0x1C, 0x18, 0x0C, 0x12, 0x13};	// Q..P
 	TGamePadState S = s_FakeState;
 	S.buttons = 0;
@@ -414,7 +414,7 @@ u16 CInput::GetVendor (unsigned nSlot) const
 	{
 		return 0;
 	}
-#ifdef NEOPI_FAKEPAD
+#ifdef NESPI_FAKEPAD
 	if (m_pPad[nSlot] == FAKE_PAD)
 	{
 		return 0x1234;
@@ -430,7 +430,7 @@ u16 CInput::GetProduct (unsigned nSlot) const
 	{
 		return 0;
 	}
-#ifdef NEOPI_FAKEPAD
+#ifdef NESPI_FAKEPAD
 	if (m_pPad[nSlot] == FAKE_PAD)
 	{
 		return 0x5678;
@@ -682,7 +682,7 @@ void CInput::LoadMaps (const char *pText)
 	{
 		UpdateSlotMap (i);
 	}
-	neopi_log ("Controls: %u pad models set up", s_nMaps);
+	nespi_log ("Controls: %u pad models set up", s_nMaps);
 }
 
 void CInput::FormatMaps (char *pOut, size_t nSize) const

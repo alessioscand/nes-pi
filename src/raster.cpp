@@ -1,9 +1,9 @@
 /*
- * neo-pi - where the HDMI picture is being read (see raster.h)
+ * nes-pi - where the HDMI picture is being read (see raster.h)
  */
 #include "raster.h"
 
-#ifdef NEOPI_HOST
+#ifdef NESPI_HOST
 #include <stdio.h>
 #include <string.h>
 #else
