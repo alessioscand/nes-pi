@@ -36,7 +36,7 @@ system on the Pi's CPU and no graphics stack adding latency. nes-pi IS the
 kernel itself: it runs directly on the Pi's hardware, boots in seconds and
 talks to the hardware directly, down to the video scaler's registers.
 **Circle** provides the essential drivers (USB, SD, HDMI, audio), so bare
-metal doesn't mean starting from scratch. 
+metal doesn't mean starting from scratch.
 
 **Nestopia.** One of the most accurate NES emulators around, with support
 for hundreds of cartridge boards (mappers). Its core is written in portable
@@ -90,7 +90,11 @@ you.
 - Overscan like a TV of the time: the borders where many games leave rubbish
   are hidden
 - Palettes: Nestopia's own, a consumer TV, the Sony CXA2025AS decoder, or
-  any `.pal` file of your choice (e.g. the FirebrandX palettes)
+  your own: name any `.pal` file (64 or 512 colours, e.g. the
+  [FirebrandX palettes](http://www.firebrandx.com/nespalette.html))
+  `palette.pal` and put it in the `nespi` folder, then pick CUSTOM in the
+  options. Palettes apply with the TV filter OFF or RGB: the other settings
+  make their own colours from the NES signal
 - Sprite flicker: original (at most 8 sprites per line, like the console) or
   reduced (no limit)
 
@@ -153,7 +157,7 @@ unplugging: it saves the cartridge saves and settings.
 Everything nes-pi writes stays in the `nespi` folder: `saves/` (save states
 and cartridge saves), `shots/` (screenshots), `nespi.cfg` (options),
 `pads.cfg` (controls for each pad model), `LAST.TXT` (last game played),
-`LOG.TXT` (diagnostics).
+`LOG.TXT` (diagnostics). The custom palette, `palette.pal`, goes there too.
 
 **Testing options.** The defaults are what nes-pi is designed and tuned for:
 the lines below are only meant for testing and comparisons, not for everyday
@@ -169,7 +173,6 @@ play. Add them to `nespi/nespi.cfg`, one per line:
 | `usbpoll=250` | poll pads every 4 ms |
 | `usbpoll=native` | poll pads at the rate they ask for instead of every 1 ms |
 | `scaler=cpu` | scale with the CPU instead of the hardware scaler (slower) |
-| `writecombine=off` | write the framebuffer the old way (slower) |
 
 An empty `nespi/BENCH` file runs a built-in benchmark on the selected game
 (results in `BENCH.TXT` and `PROFILE.TXT`).
