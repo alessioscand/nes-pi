@@ -3,8 +3,6 @@
 #include "fbmap.h"
 #include <circle/bcm2835.h>
 
-boolean g_bFbWriteCombine = TRUE;
-
 #define ATTRINDX_WC	3
 #define MAIR_WC		0x44ULL		// Normal, inner/outer Non-cacheable
 
@@ -19,7 +17,7 @@ void FbSetMair (void)
 
 unsigned FbWriteCombine (uintptr nBase, size_t nSize)
 {
-	if (!g_bFbWriteCombine || nBase == 0 || nSize == 0)
+	if (nBase == 0 || nSize == 0)
 	{
 		return 0;
 	}

@@ -1,6 +1,6 @@
-nes-pi 0.1.0-test8 - bare metal NES emulator for Raspberry Pi 4 / 400 and Pi 3
-==============================================================================
-TEST BUILD: NTSC games only (no PAL, no Famicom Disk System).
+nes-pi 0.1.0 - bare metal NES emulator for Raspberry Pi 4 and Pi 3
+==================================================================
+NTSC games only (still no PAL or Famicom Disk System).
 
 SET-UP
   1. A micro SD card formatted FAT32 (with a normal partition table).
@@ -12,12 +12,12 @@ SET-UP
 
 START-UP
   - The screen stays black for a moment, then the game list appears.
-  - SINGLE-SLOT MODE: with only one game in the nespi folder, the list is
+  - TOASTER MODE: with only one game in the nespi folder, the list is
     skipped and the game starts straight away. GAME LIST in the in-game
     menu still shows the list.
   - Game list: up/down to choose, left/right to jump by 8, A or Start to
-    play, Select for the OPTIONS menu. Names come from the file names (anything
-    from the first "(" on is left out).
+    play, Select for the OPTIONS menu. Names come from the file names
+    (anything from the first "(" on is left out).
   - A game whose board (mapper) is not supported is not started: the list
     stays on screen and LOG.TXT says why.
   - An empty file called nespi/BENCH (no extension) runs a benchmark on the
@@ -46,7 +46,7 @@ CONTROLS IN GAME
                           start)
   Select + Down           status line on/off
   Select + Up             credits (B closes them)
-  The second pad connected is player 2.
+  The second pad connected is Player 2.
 
 IN-GAME MENU (hold Select for 1 second; B resumes the game)
   SAVE STATE     saves the game (one save per game)
@@ -59,23 +59,24 @@ IN-GAME MENU (hold Select for 1 second; B resumes the game)
 
 OPTIONS MENU (Select in the list; A or left/right changes, B goes back)
   TV FILTER      OFF / RGB / S-VIDEO / COMPOSITE / RF: how the console
-                 reaches the TV. OFF: sharp square pixels. RGB: the same with
-                 light scanlines. S-VIDEO, COMPOSITE and RF use blargg's NTSC
-                 filter, a 4:3 picture as a TV of the time showed it, colours
-                 included (made by the filter from the NES video signal).
-                 S-VIDEO: soft colours. COMPOSITE: also the colour fringes,
-                 the dots crawling along the edges and the shimmer, even on a
-                 still picture, and the dithering blended into shades, as
-                 many games expected. RF: the aerial cable on grandma's TV,
-                 every defect at its worst. Each line is filtered as soon as
-                 it is drawn, on a CPU core of its own: no added lag, beam
-                 racing still works.
-  PALETTE        (OFF and RGB only: with the other TV FILTER settings the
-                 TV makes the colours) the NES colours: NESTOPIA (Nestopia's own),
-                 CONSUMER (a TV of the time), SONY TV (the Sony CXA2025AS
-                 decoder of many US TVs), CUSTOM (only if nespi/palette.pal
-                 is on the card: any .pal file of 64 or 512 colours, e.g.
-                 the FirebrandX palettes)
+                 reaches the TV. OFF: sharp square pixels. RGB: the same
+                 with light scanlines. S-VIDEO, COMPOSITE and RF use
+                 blargg's NTSC filter, a 4:3 picture as a TV of the time
+                 showed it, colours included (made by the filter from the
+                 NES video signal). S-VIDEO: soft colours. COMPOSITE: also
+                 the colour fringes, the dots crawling along the edges and
+                 the shimmer, even on a still picture, and the dithering
+                 blended into shades, as many games expected. RF: the aerial
+                 cable on grandma's TV, every defect at its worst for true
+                 nostalgia. Each line is filtered as soon as it is drawn, on
+                 a CPU core of its own: no added lag, beam racing still
+                 works.
+  PALETTE        (OFF and RGB only) the NES colours: NESTOPIA (Nestopia's
+                 own), CONSUMER (a TV of the time), SONY TV (the Sony
+                 CXA2025AS decoder of many US TVs), CUSTOM (your own: rename
+                 any .pal file of 64 or 512 colours to palette.pal and put
+                 it in the nespi folder; CUSTOM appears only if the file is
+                 there)
   SPRITE FLICKER ORIGINAL (like the console: it shows at most 8 sprites on
                  a line, so when more share a line games make them flicker)
                  or REDUCED (no limit: much less flicker; a few games use
@@ -87,14 +88,16 @@ OPTIONS MENU (Select in the list; A or left/right changes, B goes back)
   Settings are stored in nespi/nespi.cfg.
 
 STATUS LINE (Select + Down), below the picture
+
   60 FPS   LOAD 20%   39 C   RACE 2.8   1080P 4X CPU+HVS
+
   LOAD is how much of each 1/60 s frame is used (green, yellow from 75%,
   red above 95%). 4X HVS = scaled by the Pi's hardware scaler,
   CPU+HVS = the CPU draws the scanlines at 2x and the scaler doubles it,
   CPU = all by the CPU. With beam racing, LOAD leaves out the time spent
-  waiting for the HDMI output between lines. RACE (beam racing) is the time in ms from reading
-  the pads to the top of the picture being sent to the TV; DLY (without
-  beam racing) is the frame delay in ms.
+  waiting for the HDMI output between lines. RACE (beam racing) is the
+  time in ms from reading the pads to the top of the picture being sent
+  to the TV; DLY (without beam racing) is the frame delay in ms.
 
 INPUT LAG
   Each frame starts with the vertical blank, when games read the pads, and
@@ -107,9 +110,9 @@ INPUT LAG
   and "Beam racing" lines). The margins adapt to each game; if lines
   arrive late too often, that game goes back to the normal way (double
   buffer + frame delay) and LOG.TXT says so.
-  Testing options in nespi/nespi.cfg (one per line):
+  Testing options in nespi/nespi.cfg (one per line), for tests and
+  comparisons only: they give more lag or stutter than the defaults.
     beamracing=off      normal way (double buffer + frame delay)
-    writecombine=off    framebuffer written the old way (slower; only to compare)
     framedelay=off      no frame delay
     framedelay=5        fixed delay in ms (1-12; too much = stutter)
 
@@ -119,12 +122,14 @@ PICTURE
   Overscan: like a TV of the time, the 8 lines at the top and at the bottom
   are hidden and the 8 pixels on each side are black: many games leave
   rubbish there.
-  Options in nespi/nespi.cfg (one per line):
+  Testing options in nespi/nespi.cfg (one per line), for tests and
+  comparisons only: apart from overscan=off, they make nes-pi slower or
+  the controls less responsive.
     overscan=off     show all 256 x 240 pixels
-    scaler=cpu       do not use the hardware scaler (comparison only)
-    usbpoll=500      poll pads every 2 ms instead of every 1 ms (1000 Hz).
-                     If a pad misbehaves (double or missed presses,
-                     disconnects), try 500, then 250
+    scaler=cpu       do not use the hardware scaler (slower)
+    usbpoll=500      poll pads every 2 ms instead of every 1 ms (1000 Hz),
+                     only if a pad misbehaves (double or missed presses,
+                     disconnects): try 500, then 250
     usbpoll=250      every 4 ms
     usbpoll=native   at the rate the pad asks for (usually every 8-10 ms)
 
@@ -140,6 +145,7 @@ FILES ON THE CARD (nespi folder)
   LAST.TXT     last game played (the list starts there)
   nespi.cfg    OPTIONS settings
   pads.cfg     controls for each pad model
+  palette.pal  your custom palette (you put it there: see PALETTE)
   Always switch off with POWER OFF (or go back to the GAME LIST first):
   that is when cartridge saves and LOG.TXT are written.
 

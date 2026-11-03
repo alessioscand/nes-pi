@@ -12,8 +12,6 @@
 
 #include <circle/types.h>
 
-extern boolean g_bFbWriteCombine;		// writecombine=off in nespi.cfg turns it off
-
 // MAIR_EL1 index 3 = Normal Non-cacheable; every core that draws calls it once
 void FbSetMair (void);
 

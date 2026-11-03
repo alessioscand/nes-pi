@@ -1548,7 +1548,7 @@ void CKernel::ApplyVideoMode (void)
 		  m_Video.IsRedLow () ? "low" : "high", "");
 	Log (Line, COLOR_TEXT);
 	snprintf (Line, sizeof Line, "Video: framebuffer write-combining %s (%u pages of 64 KB)",
-		  m_Video.GetWCPages () ? "on" : (g_bFbWriteCombine ? "FAILED" : "off (writecombine=off)"),
+		  m_Video.GetWCPages () ? "on" : "FAILED",
 		  m_Video.GetWCPages ());
 	Log (Line, COLOR_TEXT);
 }
@@ -1600,7 +1600,6 @@ void CKernel::LoadConfig (void)
 	else if (strstr (Text, "tvfilter=composite"))	s_nTvMode = NTSC_COMPOSITE;
 	else						s_nTvMode = NTSC_OFF;	// tvfilter=rgb / off
 	s_bTvScanlines = strstr (Text, "tvfilter=off") == 0;
-	if (strstr (Text, "writecombine=off"))		g_bFbWriteCombine = FALSE;
 	if (strstr (Text, "beamracing=off"))		s_nRaceCfg = 0;
 	if (strstr (Text, "beamracing=on"))		s_nRaceCfg = 1;
 	const char *pDelay = strstr (Text, "framedelay=");

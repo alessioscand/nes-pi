@@ -381,9 +381,9 @@ void CUI::SnapshotGame (const u32 *pGameBuf)
 		for (int x = 0; x < UI_W; x++)
 		{
 			u32 p = s[x];
-			u32 r = ((p >> 16) & 0xFF) * 55 / 100;	// the paused game at 55%
-			u32 g = ((p >> 8) & 0xFF) * 55 / 100;
-			u32 b = (p & 0xFF) * 55 / 100;
+			u32 r = ((p >> 16) & 0xFF) * 30 / 100;
+			u32 g = ((p >> 8) & 0xFF) * 30 / 100;
+			u32 b = (p & 0xFF) * 30 / 100;
 			m_Snapshot[y * UI_W + x] = ARGB ((r << 16) | (g << 8) | b);
 		}
 	}
