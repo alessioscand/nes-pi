@@ -159,15 +159,15 @@ and cartridge saves), `shots/` (screenshots), `nespi.cfg` (options),
 `pads.cfg` (controls for each pad model), `LAST.TXT` (last game played),
 `LOG.TXT` (diagnostics). The custom palette, `palette.pal`, goes there too.
 
-**Reading the status line.** Select + C shows FPS, LOAD, temperature,
+**Reading the status line.** Select + Down shows FPS, LOAD, temperature,
 RACE (or DLY) and the video mode.
 
 - **LOAD** is how much of a frame the busiest moment of the last second
   needed: below 100% no frame is lost.
 - **RACE** is the time, in ms, from reading the pads to the top of the
-  picture leaving the Pi: this is neo-pi's share of the lag, the only part
-  that depends on the emulator. On an original Neo Geo the same step takes
-  about 2 ms, so a RACE of 2-4 ms means neo-pi adds next to nothing. The
+  picture leaving the Pi: this is nes-pi's share of the lag, the only part
+  that depends on the emulator. On an original NES the same step takes
+  about 2 ms, so a RACE of 2-4 ms means nes-pi adds next to nothing. The
   pad itself, the TV (use its game mode) and the game's own reaction time
   come on top, as they would with any system.
 - **DLY** replaces RACE when *beam racing* is off: it is the frame delay,
