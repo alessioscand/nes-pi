@@ -6,7 +6,8 @@ unnecessary layers and highly responsive input.
 Website:
 [alessioscand.github.io/nes-pi](https://alessioscand.github.io/nes-pi/)
 
-If you enjoy nes-pi, please consider supporting me:
+If you enjoy nes-pi or [neo-pi](https://alessioscand.github.io/neo-pi/)
+please consider supporting me:
 [paypal.me/alescandy](https://paypal.me/alescandy)
 
 ## Why nes-pi
@@ -15,7 +16,7 @@ The Nintendo Entertainment System (NES for short) was my first console and
 my introduction to gaming at home: before that, my gaming world was all
 arcades. I still collect NES cartridges to this day, but rarely get to play
 them: original hardware takes love, dedication and time that I don't always
-have. How many times have we been greeted by that blinking screen, even
+have - how many times have we been greeted by that blinking screen, even
 after the ritual blow into the cartridge? And then there's the input lag of
 modern displays and emulators, which makes games that need split-second
 timing even harder to play.
@@ -24,8 +25,8 @@ So, after [neo-pi](https://alessioscand.github.io/neo-pi/), and making the
 most of vibe coding (with all due respect to its detractors), I decided to
 take on its sibling project: **nes-pi**. The idea was the same: a focused
 experience, as close to the original hardware as possible, with the
-conveniences of modern emulation (save states, turbo buttons, the look of a
-TV of the time) and the responsiveness these games deserve. So let's look at
+conveniences of modern emulation (save states, turbo buttons, the look of
+grandma's TV) and the responsiveness these games deserve. So let's look at
 how it's made.
 
 ## The choices behind it
@@ -35,8 +36,7 @@ system on the Pi's CPU and no graphics stack adding latency. nes-pi IS the
 kernel itself: it runs directly on the Pi's hardware, boots in seconds and
 talks to the hardware directly, down to the video scaler's registers.
 **Circle** provides the essential drivers (USB, SD, HDMI, audio), so bare
-metal doesn't mean starting from scratch. nes-pi shares this foundation with
-its older brother, [neo-pi](https://github.com/alessioscand/neo-pi).
+metal doesn't mean starting from scratch. 
 
 **Nestopia.** One of the most accurate NES emulators around, with support
 for hundreds of cartridge boards (mappers). Its core is written in portable
@@ -68,8 +68,8 @@ you.
 **Gameplay**
 
 - Accurate emulation, built on the
-  [Nestopia](https://github.com/0ldsk00l/nestopia) core: hundreds of
-  cartridge boards, NTSC games, battery saves kept on the SD card
+  [Nestopia](https://github.com/0ldsk00l/nestopia) core: battery saves,
+  palettes and optional sprite limit removal
 - Responsive controls: pads are read every millisecond, and what you press
   shows up on screen almost as quickly as on the original hardware with a
   CRT
@@ -83,7 +83,7 @@ you.
 
 - Integer scaling with square pixels at 1080p or 720p, done by the Pi's
   hardware scaler
-- TV filter: OFF (sharp pixels), RGB (light scanlines), or Blargg's NTSC
+- TV filter: OFF (sharp pixels), RGB (scanlines), or Blargg's NTSC
   filter for the picture of a TV of the time through S-Video, composite or
   RF, filtered line by line on a core of its own: no added lag *(to be
   tested on Pi 3)*
@@ -97,14 +97,14 @@ you.
 **Convenience**
 
 - Toaster mode: with only one game on the SD card, nes-pi skips the list and
-  boots straight into it, like a cartridge in the slot
+  boots straight into it
 - Screenshots (PNG) and an optional status line (FPS, load, temperature,
   video mode)
 - Safe power off that saves the cartridge saves and the log
 
 **Planned:**
 
-<!-- TODO (Alessio): planned features -->
+PAL games, CRT support.
 
 
 ## Requirements
