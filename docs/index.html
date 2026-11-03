@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nes-pi – bare-metal NES emulator for Raspberry Pi</title>
+<meta name="description" content="nes-pi is a free, bare-metal NES emulator for Raspberry Pi: no operating system, boots straight into the game, beam racing for minimal input lag, USB pads polled every 1 ms, integer scaling.">
+<link rel="canonical" href="https://alessioscand.github.io/nes-pi/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://alessioscand.github.io/nes-pi/">
+<meta property="og:site_name" content="nes-pi">
+<meta property="og:title" content="nes-pi – bare-metal NES emulator for Raspberry Pi">
+<meta property="og:description" content="With no unnecessary layers and highly responsive input.">
+<meta property="og:image" content="https://alessioscand.github.io/nes-pi/img/in-game-menu.png">
+<meta property="og:image:width" content="912">
+<meta property="og:image:height" content="672">
+<meta property="og:image:alt" content="A game paused, with the nes-pi in-game menu open">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "nes-pi",
+  "description": "nes-pi is a free, bare-metal NES emulator for Raspberry Pi: no operating system, boots straight into the game, beam racing for minimal input lag, USB pads polled every 1 ms, integer scaling.",
+  "url": "https://alessioscand.github.io/nes-pi/",
+  "applicationCategory": "GameApplication",
+  "operatingSystem": "Raspberry Pi (bare metal, no operating system)",
+  "downloadUrl": "https://github.com/alessioscand/nes-pi/releases/latest",
+  "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+  "author": { "@type": "Person", "name": "Alessio Scanderebech" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+  "screenshot": "https://alessioscand.github.io/nes-pi/img/game-list.png"
+}
+</script>
+<link rel="icon" type="image/svg+xml" href="img/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   Colours and fonts
+   ========================================================================== */
+:root {
+  --bg:       #0B0B0B;
+  --line:     #262626;
+  --text:     #D8D8D8;
+  --soft:     #B4B4B4;
+  --muted:    #8C8C8C;
+  --nav:      #A9A9A9;
+  --white:    #F8F8F8;
+  --gold:     #F8B800;
+  --gold-hi:  #FFD75E;
+  --crimson:  #E40058;
+  --pink:     #FF5C93;
+  --ink:      #141414;
+
+  --pixel: 'Silkscreen', monospace;
+  --sans:  'IBM Plex Sans', system-ui, sans-serif;
+}
+
+/* ==========================================================================
+   Page
+   ========================================================================== */
+html { color-scheme: dark; scroll-behavior: smooth; overflow-x: clip; }
+
+body {
+  margin: 0;
+  padding-left:  max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--bg);
+  color: var(--text);
+  font: 17px/1.6 var(--sans);
+}
+
+a       { color: var(--gold); }
+a:hover { color: var(--gold-hi); }
+a:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+h1, h2, p, ol, dl, figure { margin: 0; }
+h2 { font-family: var(--pixel); font-weight: 400; }
+
+strong { color: var(--white); font-weight: 600; }   /* highlighted words */
+.hl    { color: var(--white); }                     /* highlighted, not bold */
+code   { color: var(--white); }
+
+/* content widths */
+.wide   { max-width: 1040px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+.narrow { max-width: 720px;  margin: 0 auto; padding: 80px 24px; }
+
+/* section with a line above it */
+.band { border-top: 1px solid var(--line); }
+
+.note     { font-size: 14px; color: var(--muted); }
+.footnote { margin-top: 28px; font-size: 15px; color: var(--muted); }
+
+/* ==========================================================================
+   Top menu
+   ========================================================================== */
+.top {
+  display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 16px;
+  padding-top: 24px;
+}
+.menu {
+  display: flex; flex-wrap: wrap; gap: 28px;
+  font: 14px/1.6 var(--pixel); letter-spacing: 0.04em;
+}
+.menu a { color: var(--nav); text-decoration: none; transition: color 180ms; }
+.menu a:hover, .menu a:focus-visible { color: var(--white); }
+
+.menu .heart { display: inline-flex; align-items: center; min-height: 24px; }
+.heart svg { display: block; transition: transform 180ms; }
+.heart:hover svg, .heart:focus-visible svg { transform: scale(1.25); }
+
+/* ==========================================================================
+   Logo, title, tagline
+   ========================================================================== */
+.hero {
+  display: flex; flex-direction: column; align-items: center; gap: 28px;
+  padding-top: 96px; padding-bottom: 48px;
+  text-align: center;
+}
+.hero h1 {
+  font-size: clamp(28px, 7vw, 38px); font-weight: 600; line-height: 1.25; letter-spacing: -0.01em;
+  color: var(--white);
+  text-wrap: balance;
+}
+.hero p { color: var(--soft); }
+
+/* bare-metal */
+.boxed {
+  border: 2px solid var(--crimson); border-radius: 6px; padding: 0 10px;
+  white-space: nowrap;
+}
+
+.logo { position: relative; width: 240px; height: 120px; isolation: isolate; }
+.logo img { display: block; width: 240px; height: 120px; image-rendering: pixelated; }
+.logo::before {
+  content: ""; position: absolute; left: 50%; top: 50%; z-index: -1;
+  width: min(520px, 100vw); height: 340px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, rgba(228,0,88,.46), rgba(228,0,88,.17) 55%, rgba(11,11,11,0) 100%);
+  pointer-events: none;
+}
+
+/* easter egg: on hover the logo turns into what nes-pi's COMPOSITE filter
+   shows, three frames (one per colour burst phase) in turn 20 times a second */
+.composite {
+  position: absolute; left: -5.75px; top: -8px;
+  width: 251.5px; height: 136px;
+  background: url(img/logo-composite.png) 0 0 / 251.5px 408px;
+  animation: crawl 150ms steps(3) infinite;
+  pointer-events: none;
+  visibility: hidden;
+}
+.logo:hover .composite { visibility: visible; }
+.logo:hover img        { visibility: hidden; }
+@keyframes crawl { to { background-position: 0 -408px; } }
+
+/* line break and no-wrap only on wide screens */
+.wide-br { display: none; }
+@media (min-width: 760px) {
+  .wide-br { display: inline; }
+  .nowrap-wide { white-space: nowrap; }
+}
+
+/* ==========================================================================
+   Screenshots
+   ========================================================================== */
+.shots {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 24px;
+}
+.shots img { display: block; width: 100%; height: auto; border-radius: 4px; }
+.shots figcaption { margin-top: 10px; text-align: center; font-size: 14px; color: var(--muted); }
+
+/* ==========================================================================
+   Download
+   ========================================================================== */
+.download {
+  display: flex; flex-direction: column; align-items: center; gap: 28px;
+  padding-top: 56px; padding-bottom: 64px;
+  text-align: center;
+}
+.download-info { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+
+.button {
+  display: inline-flex; align-items: center; gap: 10px;
+  min-height: 48px; padding: 0 28px; border-radius: 4px;
+  font: 16px/1.6 var(--pixel); text-decoration: none;
+}
+
+.button svg { flex: none; }
+
+.button-gold {
+  position: relative; overflow: hidden; isolation: isolate;
+  background: var(--gold); color: var(--ink);
+  transition: color 220ms 80ms, box-shadow 300ms;
+}
+/* on hover crimson slides in from the top, with a crimson glow around */
+.button-gold::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: var(--crimson);
+  transform: translateY(-101%);
+  transition: transform 420ms cubic-bezier(.22,.8,.24,1);
+}
+.button-gold:hover, .button-gold:focus-visible {
+  color: #FFFFFF;
+  box-shadow: 0 0 24px rgba(228,0,88,.55), 0 0 6px rgba(228,0,88,.8);
+}
+.button-gold:hover::before, .button-gold:focus-visible::before { transform: none; }
+
+.button-pink {
+  border: 2px solid var(--crimson); color: var(--white);
+  transition: background-color 200ms, color 200ms;
+}
+.button-pink path { transition: fill 200ms; }
+.button-pink:hover, .button-pink:focus-visible { background: var(--crimson); color: #FFFFFF; }
+.button-pink:hover path, .button-pink:focus-visible path { fill: #FFFFFF; }
+
+.coffee-link {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
+  font-size: 15px; color: var(--white); text-decoration: none;
+}
+.coffee-link:hover { color: var(--white); }
+.coffee-link svg { flex: none; }
+.coffee-link .pink { color: var(--pink); text-decoration: underline; }
+
+/* ==========================================================================
+   Features
+   ========================================================================== */
+.features {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px 56px;
+  padding-top: 80px; padding-bottom: 80px;
+}
+.features h2 { margin-bottom: 8px; font-size: 18px; color: var(--gold); }
+.features p  { color: var(--soft); }
+
+/* ==========================================================================
+   Install and Controls
+   ========================================================================== */
+.narrow h2 { margin-bottom: 24px; font-size: 24px; color: var(--white); }
+
+.steps { display: flex; flex-direction: column; gap: 10px; padding-left: 24px; color: var(--soft); }
+.nowrap { white-space: nowrap; }
+
+.lead { margin-bottom: 20px; color: var(--soft); }
+
+.controls { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 28px; color: var(--soft); }
+.controls dt { font: 15px/1.6 var(--pixel); color: var(--white); white-space: nowrap; }
+.controls dd { margin: 0; }
+
+/* ==========================================================================
+   Support and footer
+   ========================================================================== */
+.support {
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+  padding-top: 72px; padding-bottom: 72px;
+  text-align: center;
+}
+.support p { color: var(--soft); }
+.support .footnote { margin-top: 0; color: var(--muted); }
+
+.footer {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px;
+  padding-top: 40px; padding-bottom: 56px;
+  font-size: 14px; color: var(--muted);
+}
+
+/* ==========================================================================
+   Small screens, reduced motion
+   ========================================================================== */
+@media (max-width: 520px) {
+  .top  { justify-content: center; padding: 20px 0 0; }
+  .menu { justify-content: center; gap: 8px 16px; font-size: 13px; }
+  .controls { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .controls dd { margin-bottom: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .button-gold::before { transition: none; }
+  .heart svg { transition: none; }
+  .composite { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="top wide">
+  <nav class="menu" aria-label="Main">
+    <a href="#features">Features</a>
+    <a href="#install">Install</a>
+    <a href="#controls">Controls</a>
+    <a class="heart" href="#support" aria-label="Support" title="Support"><svg aria-hidden="true" width="21" height="18" viewBox="0 0 7 6" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2h-1v1h-1v1h-1v1H3V5H2V4H1V3H0V1h1z" fill="#E40058"/></svg></a>
+  </nav>
+</header>
+
+<section class="hero wide">
+  <div class="logo"><img src="img/logo.svg" alt="nes-pi logo" width="240" height="120"><div class="composite" aria-hidden="true"></div></div>
+  <h1>A <span class="boxed">bare-metal</span> NES emulator<br class="wide-br"> for Raspberry Pi.</h1>
+  <p class="nowrap-wide">With no unnecessary layers and highly responsive input.</p>
+</section>
+
+<section class="shots wide" aria-label="Screenshots">
+  <figure><img src="img/game-list.png" width="912" height="672" loading="lazy" alt="The game list"><figcaption>Game list</figcaption></figure>
+  <figure><img src="img/in-game-menu.png" width="912" height="672" loading="lazy" alt="A game paused, with the in-game menu open"><figcaption>In-game menu</figcaption></figure>
+  <figure><img src="img/options.png" width="912" height="672" loading="lazy" alt="The options menu"><figcaption>Options</figcaption></figure>
+</section>
+
+<section class="download wide" aria-label="Download">
+  <a class="button button-gold" href="https://github.com/alessioscand/nes-pi/releases/latest">Download</a>
+  <div class="download-info">
+    <p class="note">For RPi 3 &amp; 4 · Free · GPLv3</p>
+    <a class="coffee-link" href="#support"><svg aria-hidden="true" width="14" height="12" viewBox="0 0 7 6" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2h-1v1h-1v1h-1v1H3V5H2V4H1V3H0V1h1z" fill="#E40058"/></svg><span>Enjoying it? <span class="pink">Buy me a <em lang="it">crema caffè</em></span></span></a>
+  </div>
+</section>
+
+<section id="features" class="band">
+  <div class="features wide">
+    <div>
+      <h2>Accurate</h2>
+      <p>Powered by <strong>Nestopia</strong>, a highly accurate NES emulator supporting hundreds of mappers, battery saves, palettes and optional sprite limit removal.</p>
+    </div>
+    <div>
+      <h2>Low latency</h2>
+      <p>Gamepads are polled <strong>every millisecond</strong>. <em>Beam racing</em> keeps video output in sync with the HDMI signal for near-instant response.</p>
+    </div>
+    <div>
+      <h2>Pixel-perfect</h2>
+      <p>Crisp, square pixels at 1080p or 720p, or grandma's TV look with blargg's NTSC filter (S-Video, composite, RF). Optional scanlines, all <strong>lag-free.</strong></p>
+    </div>
+    <div>
+      <h2>Fast boot</h2>
+      <p>A lightweight <strong>bare-metal</strong> system that gets you into the game in just a few seconds.</p>
+    </div>
+    <div>
+      <h2>Streamlined</h2>
+      <p>Save states, screenshots, <em>lazy finger</em> (turbo A and B). All driven from the gamepad.</p>
+    </div>
+    <div>
+      <h2>Toaster mode</h2>
+      <p>Got just one game on your SD card? nes-pi boots straight into it!</p>
+    </div>
+  </div>
+</section>
+
+<section id="install" class="band">
+  <div class="narrow">
+    <h2>Get started in 3 steps</h2>
+    <ol class="steps">
+      <li>Download the nes-pi package and extract its contents to the root of a <span class="nowrap"><span class="hl">FAT32</span>-formatted</span> microSD card.</li>
+      <li>Copy your <code>.nes</code> game files into the <code>nespi</code> folder. No BIOS needed.</li>
+      <li>Connect a USB gamepad and an HDMI display (on a Pi 4: <span class="hl">HDMI 0</span>, the port next to the power socket), insert the card and power on your Raspberry Pi.</li>
+    </ol>
+    <p class="footnote">Games are not included.</p>
+  </div>
+</section>
+
+<section id="controls" class="band">
+  <div class="narrow">
+    <h2>Controls</h2>
+    <p class="lead">The first time you connect a pad, nes-pi asks you to press the buttons you want as A, B, Start and Select. Button hints are shown on screen in the menus. Then, in game:</p>
+    <dl class="controls">
+      <dt>Select</dt>          <dd>NES Select</dd>
+      <dt>Select, held 1s</dt> <dd>In-game menu: save and load state, reset, game list, power off</dd>
+      <dt>Select + A</dt>      <dd>Screenshot</dd>
+      <dt>Select + B</dt>      <dd><em>Lazy finger</em> (hold A or B to repeat) on/off</dd>
+      <dt>Select + Down</dt>   <dd>Status line on/off</dd>
+      <dt>Select + Up</dt>     <dd>Credits</dd>
+    </dl>
+    <p class="footnote">The second pad you connect is Player 2.</p>
+  </div>
+</section>
+
+<section id="support" class="band">
+  <div class="support narrow">
+    <p>nes-pi is <strong>free</strong>. <a href="https://github.com/alessioscand/nes-pi">Learn more</a> about the project. If you enjoy it, you can buy me a <em lang="it">crema caffè</em> :)</p>
+    <p class="footnote">From the makers of <a href="https://alessioscand.github.io/neo-pi/">neo-pi</a>, the bare-metal Neo Geo emulator.</p>
+    <a class="button button-pink" href="https://paypal.me/alescandy" target="_blank" rel="noopener"><svg aria-hidden="true" width="14" height="12" viewBox="0 0 7 6" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2h-1v1h-1v1h-1v1H3V5H2V4H1V3H0V1h1z" fill="#E40058"/></svg>Buy me a coffee</a>
+  </div>
+</section>
+
+<footer class="band">
+  <div class="footer wide">
+    <span>nes-pi by Alessio Scanderebech · free software, GPLv3</span>
+    <a href="https://github.com/alessioscand/nes-pi">Source code on GitHub</a>
+    <span>NES is a trademark of Nintendo. Not affiliated with Nintendo.</span>
+  </div>
+</footer>
+
+</body>
+</html>

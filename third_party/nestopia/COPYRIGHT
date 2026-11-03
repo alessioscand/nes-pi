@@ -1,0 +1,14 @@
+Included Software
+
+blargg's NTSC filter
+Copyright (C) 2006-2007 Shay Green
+For details, read source/nes_ntsc/*
+
+zlib compression library
+Copyright (C) 1995-2005 Jean-loup Gailly and Mark Adler
+For details, read source/zlib/*
+
+Palettes from FirebrandX, with permission
+extras/Unsaturated-V5.pal
+extras/YUV-V3.pal
+http://www.firebrandx.com/nespalette.html
