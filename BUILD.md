@@ -1,4 +1,4 @@
-# nes-pi - how to build (version 0.1.0)
+# nes-pi - how to build (version 0.1.1)
 
 Build host: Linux x86_64.
 

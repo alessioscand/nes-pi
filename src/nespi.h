@@ -4,7 +4,7 @@
 #ifndef NESPI_H
 #define NESPI_H
 
-#define NESPI_VERSION	"0.1.1-rc1"
+#define NESPI_VERSION	"0.1.1"
 
 /* Error codes = number of green LED blinks when the screen is unusable */
 #define NESPI_ERR_FB    2   /* framebuffer / HDMI */
