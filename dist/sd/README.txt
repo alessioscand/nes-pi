@@ -1,4 +1,4 @@
-nes-pi 0.1.1-rc1 - bare metal NES emulator for Raspberry Pi 4 and Pi 3
+nes-pi 0.1.1-rc1 - bare metal NES emulator for Raspberry Pi 3 and 4
 ==================================================================
 NTSC games only (still no PAL or Famicom Disk System).
 

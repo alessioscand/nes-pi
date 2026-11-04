@@ -85,8 +85,7 @@ you.
   hardware scaler
 - TV filter: OFF (sharp pixels), RGB (scanlines), or Blargg's NTSC
   filter for the picture of a TV of the time through S-Video, composite or
-  RF, filtered line by line on a core of its own: no added lag *(to be
-  tested on Pi 3)*
+  RF, filtered line by line on a core of its own: no added lag
 - Overscan like a TV of the time: the borders where many games leave rubbish
   are hidden
 - Palettes: Nestopia's own, a consumer TV, the Sony CXA2025AS decoder, or

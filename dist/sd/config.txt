@@ -1,4 +1,4 @@
-# nes-pi - Raspberry Pi 4 / 400 and Raspberry Pi 3
+# nes-pi - Raspberry Pi 3 and 4
 arm_64bit=1
 kernel_address=0x80000
 initial_turbo=0
