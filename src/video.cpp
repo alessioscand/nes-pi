@@ -29,6 +29,7 @@ CVideoOut::CVideoOut (void)
 	m_nK (1),
 	m_nM (1),
 	m_nFilter (FILTER_NONE),
+	m_bNoScanlines (FALSE),
 	m_nGameX (0),
 	m_nGameY (0),
 	m_nStatusY (0),
@@ -306,12 +307,14 @@ void CVideoOut::DrawText (unsigned nBuffer, unsigned nCol, unsigned nRow, const 
 	}
 }
 
-void CVideoOut::DrawGame (const u32 *pSource)
+void CVideoOut::DrawGame (const u32 *pSource, boolean bScanlines)
 {
+	m_bNoScanlines = !bScanlines;
 	for (unsigned y = 0; y < m_Src.nH; y++)
 	{
 		DrawGameLineTo (m_nBack, pSource, y, m_pLine, m_pDark);
 	}
+	m_bNoScanlines = FALSE;
 }
 
 void CVideoOut::DrawGameLineTo (unsigned nBuffer, const u32 *pSource, unsigned y, u32 *pLine, u32 *pDark)
@@ -321,7 +324,7 @@ void CVideoOut::DrawGameLineTo (unsigned nBuffer, const u32 *pSource, unsigned y
 	const unsigned nGameW = m_Src.bHalfX ? nW * M / 2 : nW * M;
 
 	// scanlines: bottom rows of each group darker (2 of 4 at 4x, 1 of 2 or 3)
-	const unsigned nDarkRows = m_nFilter != FILTER_NONE ? (M >= 4 ? M / 2 : (M >= 2 ? 1 : 0)) : 0;
+	const unsigned nDarkRows = m_nFilter != FILTER_NONE && !m_bNoScanlines ? (M >= 4 ? M / 2 : (M >= 2 ? 1 : 0)) : 0;
 
 	// expand one source line horizontally into cached memory, converting
 	// Geolith's XRGB8888 (R high) to the framebuffer order if needed

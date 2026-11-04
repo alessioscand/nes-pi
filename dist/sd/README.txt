@@ -1,4 +1,4 @@
-nes-pi 0.1.0 - bare metal NES emulator for Raspberry Pi 4 and Pi 3
+nes-pi 0.1.1-rc1 - bare metal NES emulator for Raspberry Pi 4 and Pi 3
 ==================================================================
 NTSC games only (still no PAL or Famicom Disk System).
 
@@ -51,13 +51,16 @@ CONTROLS IN GAME
 IN-GAME MENU (hold Select for 1 second; B resumes the game)
   SAVE STATE     saves the game (one save per game)
   LOAD STATE     loads it (available once something has been saved)
+  OPTIONS        the OPTIONS menu (below), over the paused game; B comes
+                 back here
   RESET          presses the console's RESET button
   GAME LIST      back to the game list
   POWER OFF      3 second countdown (B cancels), saves everything and
                  switches picture and sound off: then the power can be
                  unplugged
 
-OPTIONS MENU (Select in the list; A or left/right changes, B goes back)
+OPTIONS MENU (Select in the list or OPTIONS in the in-game menu; A or
+              left/right changes, B goes back)
   TV FILTER      OFF / RGB / S-VIDEO / COMPOSITE / RF: how the console
                  reaches the TV. OFF: sharp square pixels. RGB: the same
                  with light scanlines. S-VIDEO, COMPOSITE and RF use

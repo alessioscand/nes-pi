@@ -58,7 +58,7 @@ void nespi_png_free (void *p);
 
 CKernel *CKernel::s_pThis = 0;
 
-enum { GmSave, GmLoad, GmReset, GmList, GmPower, GmCount };
+enum { GmSave, GmLoad, GmOptions, GmReset, GmList, GmPower, GmCount };
 
 // ---- emulator buffers and callbacks ---------------------------------------
 
@@ -1026,20 +1026,9 @@ void CKernel::SnapshotForUI (void)
 {
 	static u32 Buf[UI_SRC_PITCH * UI_SRC_LINES];
 	memset (Buf, 0, sizeof Buf);
+	// the game behind the menus is sharp too, like the menus (whatever the TV filter)
 	for (unsigned y = 0; y < UI_H; y++)
 	{
-		if (s_nTvMode != NTSC_OFF)
-		{
-			// the filtered picture, as wide as on the screen (602 / 2 pixels)
-			const u32 *s = &s_NtscBuf[(y + 8) * NTSC_OUT_W];
-			u32 *d = &Buf[(y + UI_SRC_Y) * UI_SRC_PITCH + UI_SRC_X + (UI_W - NTSC_OUT_W / 2) / 2];
-			for (unsigned x = 0; x < NTSC_OUT_W / 2; x++)
-			{
-				u32 a = s[2 * x], b = s[2 * x + 1];
-				d[x] = ((a >> 1) & 0x7F7F7Fu) + ((b >> 1) & 0x7F7F7Fu);
-			}
-			continue;
-		}
 		const u32 *s = &s_VideoBuf[(y + 8) * NES_W];
 		u32 *d = &Buf[(y + UI_SRC_Y) * UI_SRC_PITCH + UI_SRC_X + (UI_W - NES_W) / 2];
 		memcpy (d, s, NES_W * 4);
@@ -1053,7 +1042,7 @@ void CKernel::ShowUIFrame (boolean bWait, const char *pTopMessage)
 {
 	m_Video.SetRacing (FALSE);
 	m_Video.SetSource (s_UISource);
-	m_Video.DrawGame (m_pUI->GetBuffer ());
+	m_Video.DrawGame (m_pUI->GetBuffer (), FALSE);	// menus always sharp, whatever the TV filter
 	if (pTopMessage && pTopMessage[0])
 	{
 		// in the black band above the picture, like the in-game messages
@@ -1689,21 +1678,26 @@ void CKernel::RunSystemMenu (void)
 	const char *pMsg = "";
 	unsigned nFrame = 0;
 
-	CMachineInfo *pInfo = CMachineInfo::Get ();
+	// "Raspberry Pi 3 Model B+" -> "PI 3 B+"
+	char Model[32];
+	const char *pName = CMachineInfo::Get ()->GetMachineName ();
+	if (strncmp (pName, "Raspberry ", 10) == 0) pName += 10;
+	unsigned nLen = 0;
+	for (; *pName && nLen < sizeof Model - 1; pName++)
+	{
+		if (strncmp (pName, "Model ", 6) == 0) pName += 6;
+		char c = *pName;
+		Model[nLen++] = c >= 'a' && c <= 'z' ? (char) (c - 32) : c;
+	}
+	Model[nLen] = '\0';
 	char Footer[48];
-	snprintf (Footer, sizeof Footer, "NES-PI " NESPI_VERSION "  PI %u  %u C", pInfo->GetModelMajor (),
-		  m_CPUThrottle.GetTemperature ());
+	snprintf (Footer, sizeof Footer, "NES-PI " NESPI_VERSION "  %s", Model);
 
 	while (1)
 	{
 		if (nFrame++ % 15 == 0)
 		{
 			m_pInput->UpdateDevices ();
-		}
-		if (nFrame % 120 == 0)
-		{
-			snprintf (Footer, sizeof Footer, "NES-PI " NESPI_VERSION "  PI %u  %u C", pInfo->GetModelMajor (),
-				  m_CPUThrottle.GetTemperature ());
 		}
 
 		u32 n = m_pInput->GetAny ();
@@ -2531,6 +2525,7 @@ void CKernel::RunGame (void)
 			unsigned Ids[GmCount], nIds = 0;
 			Ids[nIds++] = GmSave;		// RESUME is the B button
 			Ids[nIds++] = GmLoad;
+			Ids[nIds++] = GmOptions;
 			Ids[nIds++] = GmReset;
 			Ids[nIds++] = GmList;
 			Ids[nIds++] = GmPower;
@@ -2588,6 +2583,13 @@ void CKernel::RunGame (void)
 					}
 					break;
 
+				case GmOptions:
+					// over the paused game (every option applies at once);
+					// B comes back to this menu
+					RunSystemMenu ();
+					nMenuPrev = ~0u;
+					break;
+
 				case GmReset:
 					nes_reset (1);
 					Log ("  reset", COLOR_TEXT);
@@ -2621,8 +2623,8 @@ void CKernel::RunGame (void)
 			{
 				static const char *Labels[GmCount] =
 				{
-					"SAVE STATE", "LOAD STATE", "RESET",
-					"GAME LIST", "POWER OFF"
+					"SAVE STATE", "LOAD STATE", "OPTIONS",
+					"RESET", "GAME LIST", "POWER OFF"
 				};
 				TMenuItem Items[GmCount];
 				for (unsigned i = 0; i < nIds; i++)
@@ -2637,7 +2639,7 @@ void CKernel::RunGame (void)
 				m_pUI->DrawPanelMenu (TRUE, pName, Items, nIds, nMenuSel, pMsg, nMsgColor,
 						      Hints, 2, 0);
 				m_Video.SetSource (s_UISource);
-				m_Video.DrawGame (m_pUI->GetBuffer ());
+				m_Video.DrawGame (m_pUI->GetBuffer (), FALSE);
 			}
 			else
 			{
@@ -2917,7 +2919,7 @@ TShutdownMode CKernel::Run (void)
 
 		if (m_nLoaded != (int) nSel && !LoadGame (nSel))
 		{
-			m_pUI->DrawMessage ("CANNOT LOAD GAME", m_pGames[nSel].Name, "SEE nespi/LOG.TXT");
+			m_pUI->DrawMessage ("CANNOT LOAD GAME", 0, "SEE nespi/LOG.TXT");
 			SaveLog ();
 			for (unsigned i = 0; i < 180; i++)
 			{

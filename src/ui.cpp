@@ -562,9 +562,22 @@ void CUI::DrawMessage (const char *pTitle, const char *pLine1, const char *pLine
 {
 	Background ();
 	Panel (16, 70, UI_W - 17, 160);
-	CText (86, pTitle, UI_ERR);
-	if (pLine1) CText (108, pLine1, UI_WHITE);
-	if (pLine2) CText (124, pLine2, UI_DIM);
+
+	// the lines centred vertically in the panel (inside 74-156): 22 px from
+	// the title to the first line below it, 16 px between the other two
+	const int nY0 = 70, nY1 = 160, nGlyph = 8;
+	int nH = nGlyph;
+	if (pLine1) nH += 22;
+	if (pLine2) nH += pLine1 ? 16 : 22;
+	int y = (nY0 + nY1) / 2 - nH / 2;
+	CText (y, pTitle, UI_ERR);
+	y += 22;
+	if (pLine1)
+	{
+		CText (y, pLine1, UI_WHITE);
+		y += 16;
+	}
+	if (pLine2) CText (y, pLine2, UI_DIM);
 }
 
 // ---- controls set-up -------------------------------------------------------
@@ -662,10 +675,10 @@ void CUI::DrawCredits (const char *pVersion)
 	{
 		{"CORE",   "NESTOPIA - M.FREIJ"},
 		{"",       "R.CARMICHAEL AND OTHERS"},
-		{"NTSC",   "NES_NTSC - S.GREEN"},
 		{"C++",    "NEWLIB, LIBSTDC++"},
 		{"ZIP",    "MINIZ - R.GELDREICH"},
 		{"SYSTEM", "CIRCLE - R.STANGE"},
+		{"NTSC",   "BLARGG - S.GREEN"},
 		{"FONT",   "MATINEE - D.GUARD"},
 		{"",       ""}
 	};

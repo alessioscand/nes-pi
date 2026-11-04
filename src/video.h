@@ -84,7 +84,7 @@ public:
 	void ClearRows (unsigned nBuffer, unsigned nFirstRow, unsigned nRows, u32 nColor);
 
 	// Game: draws the whole picture into the back buffer
-	void DrawGame (const u32 *pSource);
+	void DrawGame (const u32 *pSource, boolean bScanlines = TRUE);	// FALSE: menus, always sharp
 	// one line of the picture into the back buffer (the shown one while
 	// racing), with the caller's scratch lines (PIC_MAX_W * 8 pixels each)
 	void DrawGameLine (const u32 *pSource, unsigned y, u32 *pLine, u32 *pDark)
@@ -133,6 +133,7 @@ private:
 	unsigned m_nK;				// HVS factor
 	unsigned m_nM;				// CPU draw scale
 	unsigned m_nFilter;
+	boolean  m_bNoScanlines;		// DrawGame (.., FALSE) in progress
 	TVideoSource m_Src;			// current picture
 	unsigned m_nGameX, m_nGameY;		// picture rectangle in the framebuffer
 	unsigned m_nStatusY;
