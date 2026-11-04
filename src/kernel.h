@@ -62,7 +62,6 @@ private:
 	void SetTvMode (void);
 	boolean LoadGame (unsigned nIndex);
 	void UnloadGame (void);
-	void SaveGameData (void);
 	boolean SaveState (const char *pPath);
 	boolean LoadState (const char *pPath);
 	void SnapshotForUI (void);

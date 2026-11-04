@@ -928,11 +928,6 @@ void CKernel::ApplyPalette (void)
 	}
 }
 
-// battery RAM goes to the card when the game is unloaded (game list, power off)
-void CKernel::SaveGameData (void)
-{
-}
-
 void CKernel::UnloadGame (void)
 {
 	if (m_nLoaded < 0)
@@ -1563,9 +1558,6 @@ void CKernel::LoadConfig (void)
 	f_close (&File);
 	Text[nRead] = '\0';
 
-	if (strstr (Text, "filter=SCANLINES_LIGHT"))		m_nFilter = FILTER_SCAN_LIGHT;
-	else if (strstr (Text, "filter=SCANLINES_STRONG"))	m_nFilter = FILTER_SCAN_STRONG;
-	else if (strstr (Text, "filter=SCANLINES"))		m_nFilter = FILTER_SCAN_MEDIUM;
 	if (strstr (Text, "scaler=cpu"))	m_bHVS = FALSE;
 	// USB pads are polled every 1 ms (like usbhid.jspoll=1 on Linux);
 	// usbpoll=500 / 250 = every 2 / 4 ms, for pads that misbehave at 1000 Hz;
@@ -1615,8 +1607,8 @@ void CKernel::LoadConfig (void)
 	if (s_nDelayCfg < 0)		snprintf (Delay, sizeof Delay, "auto");
 	else if (s_nDelayCfg == 0)	snprintf (Delay, sizeof Delay, "off");
 	else				snprintf (Delay, sizeof Delay, "%d ms", s_nDelayCfg);
-	snprintf (Line, sizeof Line, "Settings: filter %s, USB polling %s%s, overscan %s, frame delay %s, beam racing %s",
-		  FilterName (m_nFilter), UsbPollName (), g_nUSBInterruptPollMs ? " Hz" : "",
+	snprintf (Line, sizeof Line, "Settings: USB polling %s%s, overscan %s, frame delay %s, beam racing %s",
+		  UsbPollName (), g_nUSBInterruptPollMs ? " Hz" : "",
 		  s_bOverscan ? "hidden" : "shown", Delay,
 		  s_nRaceCfg ? "on" : "off");
 	Log (Line, COLOR_TEXT);
@@ -1625,7 +1617,7 @@ void CKernel::LoadConfig (void)
 void CKernel::SaveConfig (void)
 {
 	char Text[200];
-	snprintf (Text, sizeof Text, "filter=%s\r\n%s", FilterName (m_nFilter), m_bHVS ? "" : "scaler=cpu\r\n");
+	snprintf (Text, sizeof Text, "%s", m_bHVS ? "" : "scaler=cpu\r\n");
 	if (g_nUSBInterruptPollMs != 1)
 	{
 		strcat (Text, "usbpoll=");
@@ -1670,7 +1662,6 @@ void CKernel::RunSystemMenu (void)
 
 	unsigned nSel = 0;
 	u32 nPrev = ~0u;
-	unsigned nOldFilter = m_nFilter;
 	int nOldPalette = s_nPalette;
 	int nOldTv = s_nTvMode;
 	boolean bOldScan = s_bTvScanlines;
@@ -1798,8 +1789,6 @@ void CKernel::RunSystemMenu (void)
 			Items[i].pValue = 0;
 			Items[i].bDisabled = FALSE;
 		}
-		static const char *FilterLabels[FILTER_COUNT] = {"OFF", "LIGHT", "MEDIUM", "STRONG"};
-		(void) FilterLabels;
 		static const char *TvLabels[4] = {"RGB", "S-VIDEO", "COMPOSITE", "RF"};
 		Items[SmTv].pValue = s_nTvMode == NTSC_OFF && !s_bTvScanlines ? "OFF" : TvLabels[s_nTvMode & 3];
 		static const char *PaletteLabels[4] = {"NESTOPIA", "CONSUMER", "SONY TV", "CUSTOM"};
@@ -1813,14 +1802,13 @@ void CKernel::RunSystemMenu (void)
 		ShowUIFrame ();
 	}
 
-	if (m_nFilter != nOldFilter || s_nPalette != nOldPalette || s_bUnlimSprites != bOldSprites
+	if (s_nPalette != nOldPalette || s_bUnlimSprites != bOldSprites
 	    || s_nTvMode != nOldTv || s_bTvScanlines != bOldScan)
 	{
 		SaveConfig ();
 		char Line[140];
-		snprintf (Line, sizeof Line, "New settings: TV filter %s, scanlines %s, palette %s, sprites %s",
-			  TvName (s_nTvMode), FilterName (m_nFilter),
-			  PaletteName (s_nPalette), s_bUnlimSprites ? "unlimited" : "8 per line");
+		snprintf (Line, sizeof Line, "New settings: TV filter %s, palette %s, sprites %s",
+			  TvName (s_nTvMode), PaletteName (s_nPalette), s_bUnlimSprites ? "unlimited" : "8 per line");
 		Log (Line, COLOR_TEXT);
 	}
 }
@@ -2029,7 +2017,7 @@ boolean CKernel::PowerOffCountdown (void)
 void CKernel::PowerOff (void)
 {
 	Log ("Power off: saving data and halting", COLOR_TITLE);
-	SaveGameData ();
+	UnloadGame ();			// the cartridge's battery RAM goes to the card here
 	SaveLog ();
 	f_mount (0, "SD:", 0);
 	m_bSDOK = FALSE;
@@ -2204,7 +2192,7 @@ void CKernel::RunGame (void)
 {
 	const char *pName = m_pGames[m_nLoaded].Name;
 
-	// status line (Select+C), refreshed once per second
+	// status line (Select + Down), refreshed once per second
 	char StFps[16] = "", StLoad[8] = "", StTemp[8] = "", StRes[8] = "", StScale[16] = "";
 	char StDelay[8] = "";
 	u32 nFpsColor = UI_WHITE, nLoadColor = UI_OK, nTempColor = UI_WHITE;
@@ -2224,8 +2212,8 @@ void CKernel::RunGame (void)
 	boolean bSelectCombo[2] = {FALSE, FALSE};
 	unsigned nSelectPulse[2] = {0, 0};	// a short Select press = Select for 8 frames
 	unsigned nSelectHeld[2] = {0, 0};	// frames Select has been held alone
-	boolean bLazy[2] = {FALSE, FALSE};	// lazy finger (turbo on A-D), Select+B
-	unsigned nLazyCount[2][4] = {{0}};	// frames each of A-D has been held
+	boolean bLazy[2] = {FALSE, FALSE};	// lazy finger (turbo on A and B), Select + B
+	unsigned nLazyCount[2][2] = {{0}};	// frames each of A and B has been held
 	u32 nMenuPrev = ~0u;
 	m_pInput->RestartDiagnostics ();		// log the pad reports of this game too
 
@@ -2330,7 +2318,6 @@ void CKernel::RunGame (void)
 		if (!bMenu)
 		{
 			boolean bOpenMenu = FALSE, bOpenCredits = FALSE, bScreenshot = FALSE;
-			u32 Eff[2] = {0, 0};
 			for (unsigned p = 0; p < 2; p++)
 			{
 				u32 n = Pad[p];
@@ -2396,7 +2383,6 @@ void CKernel::RunGame (void)
 					bOpenMenu = TRUE;
 				}
 				nPrev[p] = n;
-				Eff[p] = n;
 
 				// Lazy finger (Select+B): a held A or B repeats, 2 frames pressed and
 				// 2 released (15 per second), starting pressed at once
@@ -2415,7 +2401,7 @@ void CKernel::RunGame (void)
 				}
 
 				// NES pad; while Select is held nothing goes through (Select + a
-				// button or Up / Down are NES-Pi's own combinations)
+				// button or Up / Down are nes-pi's own combinations)
 				unsigned nPad = 0;
 				if (!(n & BTN_SELECT))
 				{
@@ -2435,14 +2421,9 @@ void CKernel::RunGame (void)
 				s_Pad[p] = nPad;
 			}
 
-			if (bOpenMenu || bOpenCredits)
-			{
-				Eff[0] = Eff[1] = 0;		// nothing reaches the game while they open
-			}
-
 			if (bOpenCredits)
 			{
-				// Select + D: credits over the paused game (B closes)
+				// Select + Up: credits over the paused game (B closes)
 				s_Pad[0] = s_Pad[1] = 0;
 				SnapshotForUI ();
 				m_Video.SetRacing (FALSE);
@@ -2471,7 +2452,6 @@ void CKernel::RunGame (void)
 				}
 				SnapshotForUI ();
 				m_Video.SetRacing (FALSE);
-				SaveGameData ();
 				m_pInput->FlushDiagnostics ();
 				ReportWindow (TRUE);
 				SaveLog ();
@@ -2552,7 +2532,9 @@ void CKernel::RunGame (void)
 				switch (nId)
 				{
 				case GmSave:
-					if (SaveState (Path))
+				{
+					boolean bOK = SaveState (Path);
+					if (bOK)
 					{
 						bSaved = TRUE;
 						snprintf (MenuMsg, sizeof MenuMsg, "SAVED");
@@ -2563,8 +2545,9 @@ void CKernel::RunGame (void)
 						snprintf (MenuMsg, sizeof MenuMsg, "SAVE FAILED");
 						nMenuMsgColor = UI_ERR;
 					}
-					Log (bSaved ? "  save state: saved" : "  save state: FAILED", COLOR_TEXT);
+					Log (bOK ? "  save state: saved" : "  save state: FAILED", COLOR_TEXT);
 					break;
+				}
 
 				case GmLoad:
 					if (!bSaved)
@@ -2591,13 +2574,12 @@ void CKernel::RunGame (void)
 					break;
 
 				case GmReset:
-					nes_reset (1);
+					nes_reset (0);		// the console's RESET button
 					Log ("  reset", COLOR_TEXT);
 					bMenu = FALSE;
 					break;
 
 				case GmList:
-					SaveGameData ();
 					SaveLog ();
 					m_Video.SetRacing (FALSE);
 					return;
@@ -2632,7 +2614,7 @@ void CKernel::RunGame (void)
 					Items[i].pLabel = Labels[Ids[i]];
 					Items[i].pValue = 0;
 					Items[i].bDisabled = Ids[i] == GmLoad && !bSaved;
-						}
+				}
 				const char *pMsg = MenuMsg;
 				u32 nMsgColor = nMenuMsgColor;
 				static const TButtonHint Hints[2] = {{'A', "SELECT"}, {'B', "RESUME"}};

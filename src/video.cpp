@@ -87,7 +87,7 @@ boolean CVideoOut::Allocate (unsigned nWidth, unsigned nHeight)
 
 	// Byte order of the pixels: QEMU reports RGB (1, red in the low byte),
 	// the Pi 4 firmware (framebuffer_swap=1 by default) reports BGR (0, red
-	// in the high byte, the same layout as Geolith's buffer)
+	// in the high byte, the same layout as nes-pi's 0x00RRGGBB buffers)
 	CBcmPropertyTags Tags;
 	TPropertyTagSimple Order;
 	if (Tags.GetTag (PROPTAG_GET_PIXEL_ORDER, &Order, sizeof Order))
@@ -327,7 +327,7 @@ void CVideoOut::DrawGameLineTo (unsigned nBuffer, const u32 *pSource, unsigned y
 	const unsigned nDarkRows = m_nFilter != FILTER_NONE && !m_bNoScanlines ? (M >= 4 ? M / 2 : (M >= 2 ? 1 : 0)) : 0;
 
 	// expand one source line horizontally into cached memory, converting
-	// Geolith's XRGB8888 (R high) to the framebuffer order if needed
+	// the 0x00RRGGBB source (R high) to the framebuffer order if needed
 	const u32 *pSrc = pSource + (m_Src.nY + y) * m_Src.nPitch + m_Src.nX;
 	u32 *pDst = pLine;
 	if (m_Src.bHalfX)

@@ -149,8 +149,8 @@ FILES ON THE CARD (nespi folder)
   nespi.cfg    OPTIONS settings
   pads.cfg     controls for each pad model
   palette.pal  your custom palette (you put it there: see PALETTE)
-  Always switch off with POWER OFF (or go back to the GAME LIST first):
-  that is when cartridge saves and LOG.TXT are written.
+  Always switch off with POWER OFF: that is when cartridge saves and
+  LOG.TXT are written.
 
 IF SOMETHING GOES WRONG
   The green LED blinks a number of times, repeatedly:
