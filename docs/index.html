@@ -159,10 +159,11 @@ code   { color: var(--white); }
   background: url(img/logo-composite.png) 0 0 / 251.5px 408px;
   animation: crawl 150ms steps(3) infinite;
   pointer-events: none;
-  visibility: hidden;
+  opacity: 0; transition: opacity 350ms ease;
 }
-.logo:hover .composite { visibility: visible; }
-.logo:hover img        { visibility: hidden; }
+.logo img              { transition: opacity 350ms ease; }
+.logo:hover .composite { opacity: 1; }
+.logo:hover img        { opacity: 0; }
 @keyframes crawl { to { background-position: 0 -408px; } }
 
 /* the title on one line on wide screens */
@@ -287,6 +288,7 @@ code   { color: var(--white); }
   .button-gold::before { transition: none; }
   .heart svg { transition: none; }
   .composite { animation: none; }
+  .composite, .logo img { transition: none; }
 }
 </style>
 </head>
