@@ -34,7 +34,7 @@
 </script>
 <link rel="icon" type="image/svg+xml" href="img/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Silkscreen&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@900&amp;family=Silkscreen&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;display=swap" rel="stylesheet">
 <style>
 /* ==========================================================================
    Colours and fonts
@@ -119,16 +119,24 @@ code   { color: var(--white); }
   text-align: center;
 }
 .hero h1 {
-  font-size: clamp(28px, 7vw, 38px); font-weight: 600; line-height: 1.25; letter-spacing: -0.01em;
+  font-size: clamp(24px, 5.6vw, 30px); font-weight: 600; line-height: 1.25; letter-spacing: -0.01em;
   color: var(--white);
   text-wrap: balance;
 }
 .hero p { color: var(--soft); }
 
 /* bare-metal */
-.boxed {
-  border: 2px solid var(--crimson); border-radius: 6px; padding: 0 10px;
+.underlined {
+  text-decoration: underline; text-decoration-color: var(--crimson);
+  text-decoration-thickness: 3px; text-underline-offset: 7px;
   white-space: nowrap;
+}
+
+/* the logo with "bare metal" in katakana under it */
+.brand { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.brand .jp {
+  font-family: "M PLUS 1", sans-serif; font-weight: 900; font-size: 34px; line-height: 1;
+  color: var(--white); transform: skewX(-12deg); white-space: nowrap;
 }
 
 .logo { position: relative; width: 240px; height: 120px; isolation: isolate; }
@@ -155,11 +163,9 @@ code   { color: var(--white); }
 .logo:hover img        { visibility: hidden; }
 @keyframes crawl { to { background-position: 0 -408px; } }
 
-/* line break and no-wrap only on wide screens */
-.wide-br { display: none; }
+/* the title on one line on wide screens */
 @media (min-width: 760px) {
-  .wide-br { display: inline; }
-  .nowrap-wide { white-space: nowrap; }
+  .hero h1 { white-space: nowrap; }
 }
 
 /* ==========================================================================
@@ -294,9 +300,11 @@ code   { color: var(--white); }
 </header>
 
 <section class="hero wide">
-  <div class="logo"><img src="img/logo.svg" alt="nes-pi logo" width="240" height="120"><div class="composite" aria-hidden="true"></div></div>
-  <h1>A <span class="boxed">bare-metal</span> NES emulator<br class="wide-br"> for Raspberry Pi.</h1>
-  <p class="nowrap-wide">With no unnecessary layers and highly responsive input.</p>
+  <div class="brand">
+    <div class="logo"><img src="img/logo.svg" alt="nes-pi logo" width="240" height="120"><div class="composite" aria-hidden="true"></div></div>
+    <div class="jp" lang="ja" aria-hidden="true">ベアメタル</div>
+  </div>
+  <h1>A <span class="underlined">bare-metal</span> NES emulator for Raspberry Pi.</h1>
 </section>
 
 <section class="shots wide" aria-label="Screenshots">
@@ -320,7 +328,7 @@ code   { color: var(--white); }
       <p>Powered by <strong>Nestopia</strong>, a highly accurate NES emulator supporting hundreds of mappers, battery saves, palettes and optional sprite limit removal.</p>
     </div>
     <div>
-      <h2>Low latency</h2>
+      <h2>Highly responsive input</h2>
       <p>Gamepads are polled <strong>every millisecond</strong>. <em>Beam racing</em> keeps video output in sync with the HDMI signal for near-instant response.</p>
     </div>
     <div>
