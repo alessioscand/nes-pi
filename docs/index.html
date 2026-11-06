@@ -119,23 +119,44 @@ code   { color: var(--white); }
   text-align: center;
 }
 .hero h1 {
-  font-size: clamp(24px, 5.6vw, 30px); font-weight: 600; line-height: 1.45; letter-spacing: -0.01em;  /* room for the underline when it wraps */
+  font-size: clamp(24px, 5.6vw, 30px); font-weight: 600; line-height: 1.55; letter-spacing: -0.01em;  /* room for the underline when it wraps */
   color: var(--white);
   text-wrap: balance;
 }
 .hero p { color: var(--soft); }
 
-/* bare-metal */
-.underlined {
+/* Bare-metal, alternating with Beam-racing: both words in one grid cell,
+   right-aligned, so the rest of the line never moves; each word stays 5.4 s
+   and each change rolls up in 0.6 s, like a raster */
+.swap { display: inline-grid; justify-items: end; vertical-align: bottom; }
+.swap > span {
+  grid-area: 1 / 1; white-space: nowrap;
   text-decoration: underline; text-decoration-color: var(--crimson);
-  text-decoration-thickness: 3px; text-underline-offset: 7px;
-  white-space: nowrap;
+  text-decoration-thickness: 3px; text-underline-offset: 10px;  /* clear of the g in racing */
+  animation: 12s ease-in-out infinite;
+}
+.swap .a { animation-name: word-a; }
+.swap .b { animation-name: word-b; opacity: 0; }
+@keyframes word-a {
+  0%, 45%   { opacity: 1; transform: none; }
+  50%, 95%  { opacity: 0; transform: translateY(-0.35em); }
+  95.01%    { transform: translateY(0.35em); }
+  100%      { opacity: 1; transform: none; }
+}
+@keyframes word-b {
+  0%, 45%   { opacity: 0; transform: translateY(0.35em); }
+  50%, 95%  { opacity: 1; transform: none; }
+  100%      { opacity: 0; transform: translateY(-0.35em); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .swap .a { animation: none; }
+  .swap .b { display: none; }
 }
 
 /* the logo with "bare metal" in katakana under it */
 .brand { display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .brand .jp {
-  font-family: "M PLUS 1", sans-serif; font-weight: 900; font-size: 34px; line-height: 1;
+  font-family: "M PLUS 1", sans-serif; font-weight: 900; font-size: 30px; line-height: 1;
   color: var(--white); transform: skewX(-12deg); white-space: nowrap;
 }
 
@@ -308,7 +329,7 @@ code   { color: var(--white); }
     <a class="logo" href="#download" aria-label="nes-pi: go to Download"><img src="img/logo.svg" alt="nes-pi logo" width="240" height="120"><div class="composite" aria-hidden="true"></div></a>
     <div class="jp" lang="ja" aria-hidden="true">ベアメタル</div>
   </div>
-  <h1>A <span class="underlined">bare-metal</span> NES emulator for Raspberry Pi.</h1>
+  <h1><span class="swap"><span class="a">Bare-metal</span><span class="b" aria-hidden="true">Beam-racing</span></span> NES emulator for Raspberry Pi.</h1>
 </section>
 
 <section class="shots wide" aria-label="Screenshots">
