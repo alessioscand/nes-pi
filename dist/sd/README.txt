@@ -158,5 +158,6 @@ IF SOMETHING GOES WRONG
   No picture at all: put a # in front of hdmi_group and hdmi_mode in
   config.txt.
 
-nes-pi by Alessio Scanderebech. Licence: GPLv3 (see LICENSES.txt).
+nes-pi is a human-led, vibe-coded experiment by Alessio Scanderebech,
+written with Claude. Free software, GPLv3 (see LICENSES.txt).
 Emulation by Nestopia. NES is a trademark of Nintendo. Games not included.

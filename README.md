@@ -6,9 +6,10 @@ unnecessary layers and highly responsive input.
 Website:
 [alessioscand.github.io/nes-pi](https://alessioscand.github.io/nes-pi/)
 
-If you enjoy nes-pi or [neo-pi](https://alessioscand.github.io/neo-pi/)
-please consider supporting me:
-[paypal.me/alescandy](https://paypal.me/alescandy)
+nes-pi is a human-led, vibe-coded experiment by Alessio Scanderebech.
+If you enjoy it, [neo-pi](https://alessioscand.github.io/neo-pi/) or
+[m92-pi](https://alessioscand.github.io/m92-pi/), please consider
+supporting me: [paypal.me/alescandy](https://paypal.me/alescandy)
 
 ## Why nes-pi
 

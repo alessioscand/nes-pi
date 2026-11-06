@@ -287,6 +287,8 @@ code   { color: var(--white); }
 }
 .support p { color: var(--soft); }
 .support .footnote { margin-top: 0; color: var(--muted); }
+.support .footnote small { font-size: .8em; letter-spacing: .06em; }
+.human { color: var(--pink); }
 
 .footer {
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px;
@@ -407,13 +409,13 @@ code   { color: var(--white); }
   <div class="support narrow">
     <p>nes-pi is <strong>free</strong>. <a href="https://github.com/alessioscand/nes-pi">Learn more</a> about the project. If you enjoy it, you can buy me a <em lang="it">crema caffè</em> :)</p>
     <a class="button button-pink" href="https://paypal.me/alescandy" target="_blank" rel="noopener"><svg aria-hidden="true" width="14" height="12" viewBox="0 0 7 6" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2h-1v1h-1v1h-1v1H3V5H2V4H1V3H0V1h1z" fill="#E40058"/></svg>Buy me a coffee</a>
-    <p class="footnote">You might also like <a href="https://alessioscand.github.io/neo-pi/">neo-pi</a>, a bare-metal NEO·GEO emulator.</p>
+    <p class="footnote">Siblings: <a href="https://alessioscand.github.io/neo-pi/">neo-pi</a> <small>NEO·GEO</small> // <a href="https://alessioscand.github.io/m92-pi/">m92-pi</a> <small>Irem M92</small></p>
   </div> 
 </section>
 
 <footer class="band">
   <div class="footer wide">
-    <span>nes-pi by Alessio Scanderebech · free software, GPLv3</span>
+    <span>nes-pi is a <span class="human">human-led</span>, vibe-coded experiment by Alessio Scanderebech · free software, GPLv3</span>
     <a href="https://github.com/alessioscand/nes-pi">Source code on GitHub</a>
     <span>NES is a trademark of Nintendo. Not affiliated with Nintendo.</span>
   </div>
