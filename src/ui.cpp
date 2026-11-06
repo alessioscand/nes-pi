@@ -668,7 +668,7 @@ void CUI::DrawCredits (const char *pVersion)
 	char Title[32] = "NES-PI ";
 	strncat (Title, pVersion, sizeof Title - 8);
 	CText (y0 + 28, Title, UI_WHITE, 2, TRUE);
-	CText (y0 + 48, "BY ALESSIO SCANDEREBECH", UI_VALUE);
+	CText (y0 + 48, "BY A.SCANDEREBECH", UI_VALUE);
 	Fill (x0 + 8, y0 + 62, x1 - x0 - 15, 1, UI_FRAME2);
 
 	static const char *Rows[8][2] =
