@@ -7,7 +7,7 @@ Website:
 [alessioscand.github.io/nes-pi](https://alessioscand.github.io/nes-pi/)
 
 nes-pi is a human-led, vibe-coded experiment by Alessio Scanderebech.
-If you enjoy it, [neo-pi](https://alessioscand.github.io/neo-pi/) or
+If you enjoy nes-pi, [neo-pi](https://alessioscand.github.io/neo-pi/) or
 [m92-pi](https://alessioscand.github.io/m92-pi/), please consider
 supporting me: [paypal.me/alescandy](https://paypal.me/alescandy)
 
