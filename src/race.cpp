@@ -50,6 +50,12 @@ void CBeamRacer::SetGeometry (unsigned nGameY, unsigned nM, unsigned nK, unsigne
 	}
 }
 
+void CBeamRacer::Rearm (void)
+{
+	m_bFailed = FALSE;
+	m_nWindowFrames = m_nWindowLate = 0;
+}
+
 void CBeamRacer::Restart (void)
 {
 	const CRaster *R = m_pRaster;

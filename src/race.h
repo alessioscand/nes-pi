@@ -40,6 +40,7 @@ public:
 	// framebuffer line of the first game row, CPU scale m, HVS factor k, rows
 	void SetGeometry (unsigned nGameY, unsigned nM, unsigned nK, unsigned nRows);
 	void Restart (void);			// new game, after a pause: large margins again
+	void Rearm (void);			// a game started from the list: try again after Failed()
 
 	// core 0: frame start; returns the time to wait for (ticks)
 	u64 PlanFrame (u64 nNow);
