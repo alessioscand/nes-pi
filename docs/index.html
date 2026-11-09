@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nes-pi – bare-metal NES emulator for Raspberry Pi</title>
+<meta name="description" content="nes-pi is a free, bare-metal NES emulator for Raspberry Pi: no operating system, boots straight into the game, beam racing for minimal input lag, USB pads polled every 1 ms, integer scaling.">
+<link rel="canonical" href="https://alessioscand.github.io/nes-pi/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://alessioscand.github.io/nes-pi/">
+<meta property="og:site_name" content="nes-pi">
+<meta property="og:title" content="nes-pi – bare-metal NES emulator for Raspberry Pi">
+<meta property="og:description" content="With no unnecessary layers and highly responsive input.">
+<meta property="og:image" content="https://alessioscand.github.io/nes-pi/img/in-game-menu.png">
+<meta property="og:image:width" content="912">
+<meta property="og:image:height" content="672">
+<meta property="og:image:alt" content="A game paused, with the nes-pi in-game menu open">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "nes-pi",
+  "description": "nes-pi is a free, bare-metal NES emulator for Raspberry Pi: no operating system, boots straight into the game, beam racing for minimal input lag, USB pads polled every 1 ms, integer scaling.",
+  "url": "https://alessioscand.github.io/nes-pi/",
+  "applicationCategory": "GameApplication",
+  "operatingSystem": "Raspberry Pi (bare metal, no operating system)",
+  "downloadUrl": "https://github.com/alessioscand/nes-pi/releases/latest",
+  "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+  "author": { "@type": "Person", "name": "Alessio Scanderebech" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+  "screenshot": "https://alessioscand.github.io/nes-pi/img/game-list.png"
+}
+</script>
+<link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@900&amp;family=Silkscreen&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   Colours and fonts
+   ========================================================================== */
+:root {
+  --bg:       #0B0B0B;
+  --line:     #262626;
+  --text:     #D8D8D8;
+  --soft:     #B4B4B4;
+  --muted:    #8C8C8C;
+  --nav:      #A9A9A9;
+  --white:    #F8F8F8;
+  --gold:     #F8B800;
+  --gold-hi:  #FFD75E;
+  --crimson:  #E40058;
+  --pink:     #FF5C93;
+  --sky:      #3CBCFC;  /* beam racing: the pads are read */
+  --ink:      #141414;
+
+  --pixel: 'Silkscreen', monospace;
+  --sans:  'IBM Plex Sans', system-ui, sans-serif;
+}
+
+/* ==========================================================================
+   Page
+   ========================================================================== */
+html { color-scheme: dark; scroll-behavior: smooth; overflow-x: clip; }
+
+body {
+  margin: 0;
+  padding-left:  max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--bg);
+  color: var(--text);
+  font: 17px/1.6 var(--sans);
+}
+
+a       { color: var(--gold); }
+a:hover { color: var(--gold-hi); }
+a:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+h1, h2, p, ol, dl, figure { margin: 0; }
+h2 { font-family: var(--pixel); font-weight: 400; }
+
+strong { color: var(--white); font-weight: 600; }   /* highlighted words */
+.hl    { color: var(--white); }                     /* highlighted, not bold */
+code   { color: var(--white); }
+
+/* content widths */
+.wide   { max-width: 1040px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+.narrow { max-width: 720px;  margin: 0 auto; padding: 80px 24px; }
+
+/* section with a line above it */
+.band { border-top: 1px solid var(--line); }
+
+.note     { font-size: 14px; color: var(--muted); }
+.footnote { margin-top: 28px; font-size: 15px; color: var(--muted); }
+
+/* ==========================================================================
+   Top menu
+   ========================================================================== */
+.top {
+  display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 16px;
+  padding-top: 24px;
+}
+.menu {
+  display: flex; flex-wrap: wrap; gap: 28px;
+  font: 14px/1.6 var(--pixel); letter-spacing: 0.04em;
+}
+.menu a { color: var(--nav); text-decoration: none; transition: color 180ms; }
+.menu a:hover, .menu a:focus-visible { color: var(--white); }
+
+.menu .heart { display: inline-flex; align-items: center; min-height: 24px; }
+.heart svg { display: block; transition: transform 180ms; }
+.heart:hover svg, .heart:focus-visible svg { transform: scale(1.25); }
+
+/* ==========================================================================
+   Logo, title, tagline
+   ========================================================================== */
+.hero {
+  display: flex; flex-direction: column; align-items: center; gap: 28px;
+  padding-top: 96px; padding-bottom: 48px;
+  text-align: center;
+}
+.hero h1 {
+  font-size: clamp(24px, 5.6vw, 30px); font-weight: 600; line-height: 1.55; letter-spacing: -0.01em;  /* room for the underline when it wraps */
+  color: var(--white);
+  text-wrap: balance;
+}
+.hero p { color: var(--soft); }
+
+/* Bare-metal, alternating with Beam-racing: both words in one grid cell,
+   right-aligned, so the rest of the line never moves; each word stays 5.4 s
+   and each change rolls up in 0.6 s, like a raster */
+.swap { display: inline-grid; justify-items: end; vertical-align: bottom; }
+.swap > span {
+  grid-area: 1 / 1; white-space: nowrap;
+  text-decoration: underline; text-decoration-color: var(--crimson);
+  text-decoration-thickness: 3px; text-underline-offset: 10px;  /* clear of the g in racing */
+  animation: 12s ease-in-out infinite;
+}
+.swap .a { animation-name: word-a; }
+.swap .b { animation-name: word-b; opacity: 0; }
+@keyframes word-a {
+  0%, 45%   { opacity: 1; transform: none; }
+  50%, 95%  { opacity: 0; transform: translateY(-0.35em); }
+  95.01%    { transform: translateY(0.35em); }
+  100%      { opacity: 1; transform: none; }
+}
+@keyframes word-b {
+  0%, 45%   { opacity: 0; transform: translateY(0.35em); }
+  50%, 95%  { opacity: 1; transform: none; }
+  100%      { opacity: 0; transform: translateY(-0.35em); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .swap .a { animation: none; }
+  .swap .b { display: none; }
+}
+
+/* the logo with "bare metal" in katakana under it */
+.brand { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.brand .jp {
+  font-family: "M PLUS 1", sans-serif; font-weight: 900; font-size: 18px; line-height: 1;
+  letter-spacing: .8em; margin-right: -.8em;  /* the last letter's spacing would shift it left */
+  color: var(--white); transform: skewX(-12deg); white-space: nowrap;
+}
+
+.logo { position: relative; display: block; width: 240px; height: 120px; isolation: isolate; }
+.logo:focus-visible { outline-offset: 6px; }
+#download { scroll-margin: 40vh 0; }	/* the logo scrolls it to the middle of the screen */
+.logo img { display: block; width: 240px; height: 120px; image-rendering: pixelated; }
+.logo::before {
+  content: ""; position: absolute; left: 50%; top: 50%; z-index: -1;
+  width: min(520px, 100vw); height: 340px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, rgba(228,0,88,.46), rgba(228,0,88,.17) 55%, rgba(11,11,11,0) 100%);
+  pointer-events: none;
+}
+
+/* easter egg: on hover the logo turns into what nes-pi's COMPOSITE filter
+   shows, three frames (one per colour burst phase) in turn 20 times a second */
+.composite {
+  position: absolute; left: -5.75px; top: -8px;
+  width: 251.5px; height: 136px;
+  background: url(img/logo-composite.png) 0 0 / 251.5px 408px;
+  animation: crawl 150ms steps(3) infinite;
+  pointer-events: none;
+  opacity: 0; transition: opacity 350ms ease;
+}
+.logo img              { transition: opacity 350ms ease; }
+.logo:hover .composite { opacity: 1; }
+.logo:hover img        { opacity: 0; }
+@keyframes crawl { to { background-position: 0 -408px; } }
+
+/* the title on one line on wide screens */
+@media (min-width: 760px) {
+  .hero h1 { white-space: nowrap; }
+}
+/* on two lines, a little more room between them */
+@media (max-width: 759px) {
+  .hero h1 { line-height: 1.85; }
+}
+
+/* ==========================================================================
+   Screenshots
+   ========================================================================== */
+.shots {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 24px;
+}
+.shots img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 1px;
+  cursor: zoom-in; transition: border-color .15s; }
+.shots img:hover { border-color: #5a5a5a; }
+/* the paused game is only 256 pixels wide: same height as the game list */
+.shots img.game { width: 84.2%; margin: 0 auto; }
+
+/* The viewer: a click on a screenshot opens it at its real size */
+.viewer { padding: 0; border: 0; background: none; overflow: visible; max-width: none; max-height: none; }
+.viewer::backdrop { background: rgba(11, 11, 11, .92); }
+.viewer img { display: block; width: 912px; max-width: calc(100vw - 32px); max-height: calc(100vh - 100px);
+  object-fit: contain; border: 1px solid var(--line); border-radius: 1px; }
+.viewer p { margin-top: 12px; text-align: center; font-size: 12px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase; color: #a8a8a8; }
+.viewer button { position: fixed; width: 44px; height: 44px; border: 1px solid #3a3a3a;
+  background: rgba(11, 11, 11, .8); color: #fff; font-size: 22px; cursor: pointer; }
+.viewer .prev  { left: 16px; top: calc(50% - 22px); }
+.viewer .next  { right: 16px; top: calc(50% - 22px); }
+.viewer .close { right: 16px; top: 16px; font-size: 18px; }
+.shots figcaption { margin-top: 10px; text-align: center; font-size: 12px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase; color: #a8a8a8; }
+
+/* ==========================================================================
+   Download
+   ========================================================================== */
+.download {
+  display: flex; flex-direction: column; align-items: center; gap: 28px;
+  padding-top: 56px; padding-bottom: 64px;
+  text-align: center;
+}
+.download-info { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+
+.button {
+  display: inline-flex; align-items: center; gap: 10px;
+  min-height: 48px; padding: 0 28px; border-radius: 4px;
+  font: 16px/1.6 var(--pixel); text-decoration: none;
+}
+
+.button svg { flex: none; }
+
+.button-gold {
+  position: relative; overflow: hidden; isolation: isolate;
+  background: var(--gold); color: var(--ink);
+  transition: color 220ms 80ms, box-shadow 300ms;
+}
+/* on hover crimson slides in from the top, with a crimson glow around */
+.button-gold::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: var(--crimson);
+  transform: translateY(-101%);
+  transition: transform 420ms cubic-bezier(.22,.8,.24,1);
+}
+.button-gold:hover, .button-gold:focus-visible {
+  color: #FFFFFF;
+  box-shadow: 0 0 24px rgba(228,0,88,.55), 0 0 6px rgba(228,0,88,.8);
+}
+.button-gold:hover::before, .button-gold:focus-visible::before { transform: none; }
+
+.button-pink {
+  border: 2px solid var(--crimson); color: var(--white);
+  transition: background-color 200ms, color 200ms;
+}
+.button-pink path { transition: fill 200ms; }
+.button-pink:hover, .button-pink:focus-visible { background: var(--crimson); color: #FFFFFF; }
+.button-pink:hover path, .button-pink:focus-visible path { fill: #FFFFFF; }
+
+.coffee-link {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
+  font-size: 15px; color: var(--white); text-decoration: none;
+}
+.coffee-link:hover { color: var(--white); }
+.coffee-link svg { flex: none; }
+
+/* ==========================================================================
+   Features
+   ========================================================================== */
+.features {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px 56px;
+  padding-top: 80px; padding-bottom: 80px;
+}
+.features h2, .beam h2 { margin-bottom: 8px; font-size: 18px; color: var(--gold); }
+.features p,  .beam p  { color: var(--soft); }
+
+/* ==========================================================================
+   Highly responsive: a button press followed over three frames
+   ========================================================================== */
+.beam       { margin-top: -40px; padding-bottom: 80px; }  /* one more feature, under the grid */
+.beam > *   { max-width: 760px; }
+.beam .lead { margin-bottom: 32px; }
+
+.timeline {
+  display: grid; grid-template-columns: 120px 176px minmax(0, 1fr); gap: 12px 16px; align-items: center;
+  font-size: 13px;
+}
+.timeline .label      { font: 12px/1.4 var(--pixel); color: var(--muted); }
+.timeline .label.ours { color: var(--gold); }
+.timeline .spacer     { grid-column: 1 / 3; }
+
+.tv { display: block; width: 176px; height: auto; border: 1px solid var(--line); image-rendering: pixelated; }
+
+.scale      { position: relative; height: 18px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.scale span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.scale .s0  { left: 0; transform: none; }
+.scale .s1  { left: 33.333%; }
+.scale .s2  { left: 66.667%; }
+.scale .s3  { left: 100%; transform: translateX(-100%); }
+
+/* one column per frame (16.7 ms) */
+.track {
+  position: relative; height: 32px;
+  border: 1px solid var(--line);
+  background: repeating-linear-gradient(90deg, transparent 0 calc(33.333% - 1px), var(--line) calc(33.333% - 1px) 33.333%);
+}
+.event    { position: absolute; top: 3px; bottom: 3px; opacity: .25; transition: opacity .15s; }
+.event.on { opacity: 1; }
+.press    { width: 4px; background: var(--white); }
+.read     { width: 4px; background: var(--sky); }
+/* upper half: rendering; lower half: sending to the TV */
+.drawn    { bottom: calc(50% + 1px); background: rgba(240, 200, 30, .3); border: 1px solid var(--gold); }
+.shown    { top: calc(50% + 1px); background: var(--gold); }
+.playhead { position: absolute; top: -4px; bottom: -4px; width: 1px; background: var(--white); }
+
+.key   { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 16px; font-size: 14px; color: var(--muted); }
+.key i { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; }
+.key .press, .key .read, .key .drawn, .key .shown { position: static; width: 12px; height: 12px; }
+
+.readout { min-height: 1.6em; margin-top: 14px; font-size: 14px; color: var(--soft); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 520px) {
+  .timeline { grid-template-columns: 88px minmax(0, 1fr); gap: 6px 12px; }
+  .timeline .label  { grid-column: 1 / -1; margin-top: 10px; }
+  .timeline .spacer { grid-column: 1; }
+  .tv { width: 88px; }
+}
+
+/* ==========================================================================
+   Install and Controls
+   ========================================================================== */
+.narrow h2 { margin-bottom: 24px; font-size: 24px; color: var(--white); }
+
+.steps { display: flex; flex-direction: column; gap: 10px; padding-left: 24px; color: var(--soft); }
+.nowrap { white-space: nowrap; }
+
+.lead { margin-bottom: 20px; color: var(--soft); }
+
+.controls { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 28px; color: var(--soft); }
+.controls dt { font: 15px/1.6 var(--pixel); color: var(--white); white-space: nowrap; }
+.controls dd { margin: 0; }
+
+/* ==========================================================================
+   Support and footer
+   ========================================================================== */
+.support {
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+  padding-top: 72px; padding-bottom: 72px;
+  text-align: center;
+}
+.support p { color: var(--soft); }
+.support .footnote { margin-top: 0; color: var(--muted); }
+.support .footnote small { font-size: .8em; letter-spacing: .06em; }
+.human { color: var(--pink); }
+
+.footer {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px;
+  padding-top: 40px; padding-bottom: 56px;
+  font-size: 14px; color: var(--muted);
+}
+
+/* ==========================================================================
+   Small screens, reduced motion
+   ========================================================================== */
+@media (max-width: 520px) {
+  .top  { justify-content: center; padding: 20px 0 0; }
+  .menu { justify-content: center; gap: 8px 16px; font-size: 13px; }
+  .controls { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .controls dd { margin-bottom: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .button-gold::before { transition: none; }
+  .heart svg { transition: none; }
+  .composite { animation: none; }
+  .composite, .logo img { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="top wide">
+  <nav class="menu" aria-label="Main">
+    <a href="#features">Features</a>
+    <a href="#install">Install</a>
+    <a href="#controls">Controls</a>
+    <a class="heart" href="#support" aria-label="Support" title="Support"><svg aria-hidden="true" width="21" height="18" viewBox="0 0 7 6" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2h-1v1h-1v1h-1v1H3V5H2V4H1V3H0V1h1z" fill="#E40058"/></svg></a>
+  </nav>
+</header>
+
+<section class="hero wide">
+  <div class="brand">
+    <a class="logo" href="#download" aria-label="nes-pi: go to Download"><img src="img/logo.svg" alt="nes-pi logo" width="240" height="120"><div class="composite" aria-hidden="true"></div></a>
+    <div class="jp" lang="ja" aria-hidden="true">ベアメタル</div>
+  </div>
+  <h1><span class="swap"><span class="a">Bare-metal</span><span class="b" aria-hidden="true">Beam-racing</span></span> NES emulator for Raspberry Pi.</h1>
+</section>
+
+<section class="shots wide" aria-label="Screenshots">
+  <figure><img src="img/game-list.png" width="912" height="672" loading="lazy" alt="The game list"><figcaption>Game list</figcaption></figure>
+  <figure><img class="game" src="img/in-game-menu.png" width="768" height="672" loading="lazy" alt="A game paused, with the in-game menu open"><figcaption>In-game menu</figcaption></figure>
+  <figure><img class="game" src="img/options.png" width="768" height="672" loading="lazy" alt="The options menu"><figcaption>Options</figcaption></figure>
+</section>
+
+<section class="download wide" aria-label="Download">
+  <a id="download" class="button button-gold" href="https://github.com/alessioscand/nes-pi/releases/latest">Download now</a>
+  <div class="download-info">
+    <p class="note">For RPi 3 &amp; 4 · Free · GPLv3</p>
+    <a class="coffee-link" href="#support"><svg aria-hidden="true" width="14" height="12" viewBox="0 0 7 6" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2h-1v1h-1v1h-1v1H3V5H2V4H1V3H0V1h1z" fill="#E40058"/></svg><span>Enjoying it?</span></a>
+  </div>
+</section>
+
+<section id="features" class="band">
+  <div class="features wide">
+    <div>
+      <h2>Accurate</h2>
+      <p>Powered by <strong>Nestopia</strong>, a highly accurate NES emulator supporting hundreds of mappers, battery saves, palettes and optional sprite limit removal.</p>
+    </div>
+    <div>
+      <h2>Fast boot</h2>
+      <p>A lightweight <strong>bare-metal</strong> system that gets you into the game in just a few seconds. Just one game on your SD card? nes-pi boots straight into it!</p>
+    </div>
+    <div>
+      <h2>Pixel-perfect</h2>
+      <p>With <strong>integer scaling</strong> at 1080p or 720p, every pixel stays sharp and square. If you miss grandma's TV, add scanlines or blargg's NTSC filter: S-Video, composite or RF.</p>
+    </div>
+  </div>
+  <div class="beam wide">
+    <h2>Highly responsive</h2>
+    <p class="lead">Gamepads are polled every millisecond, and nes-pi uses <strong>beam racing</strong> to send each scanline to the TV as soon as it is rendered, in sync with the display's refresh. An emulator with double buffering instead waits for the entire frame to be rendered, adding up to one frame of latency.</p>
+    <div class="timeline">
+      <div class="spacer"></div>
+      <div class="scale" aria-hidden="true"><span class="s0">0 ms</span><span class="s1">16.7</span><span class="s2">33.4</span><span class="s3">50 ms</span></div>
+
+      <div class="label ours">beam racing</div>
+      <canvas class="tv" width="176" height="130" data-shown=".364" aria-label="What the TV shows with nes-pi"></canvas>
+      <div class="track">
+        <div class="event press" data-at=".08"></div>
+        <div class="event read"  data-at=".3333"></div>
+        <div class="event drawn" data-at=".336" data-width=".31"></div>
+        <div class="event shown" data-at=".364" data-width=".3333"></div>
+        <div class="playhead"></div>
+      </div>
+
+      <div class="label">double buffering</div>
+      <canvas class="tv" width="176" height="130" data-shown=".6667" aria-label="What the TV shows with a double-buffered emulator"></canvas>
+      <div class="track">
+        <div class="event press" data-at=".08"></div>
+        <div class="event read"  data-at=".3333"></div>
+        <div class="event drawn" data-at=".336"  data-width=".12"></div>
+        <div class="event shown" data-at=".6667" data-width=".3333"></div>
+        <div class="playhead"></div>
+      </div>
+    </div>
+    <div class="key">
+      <span><i class="press"></i>button pressed</span>
+      <span><i class="read"></i>the game reads the pads</span>
+      <span><i class="drawn"></i>frame rendered</span>
+      <span><i class="shown"></i>frame sent to the TV, line by line</span>
+    </div>
+    <div class="readout" aria-live="off"></div>
+  </div>
+</section>
+
+<section id="install" class="band">
+  <div class="narrow">
+    <h2>Get started</h2>
+    <ol class="steps">
+      <li>Download the nes-pi package and extract its contents to the root of a <span class="nowrap"><span class="hl">FAT32</span>-formatted</span> microSD card.</li>
+      <li>Copy your <code>.nes</code> game files into the <code>nespi</code> folder. No BIOS needed.</li>
+      <li>Connect a USB gamepad and an HDMI display (on a Pi 4: <span class="hl">HDMI 0</span>, the port next to the power socket), insert the card and power on your Raspberry Pi.</li>
+    </ol>
+    <p class="footnote">Games are not included.</p>
+  </div>
+</section>
+
+<section id="controls" class="band">
+  <div class="narrow">
+    <h2>Controls</h2>
+    <p class="lead">The first time you connect a pad, nes-pi asks you to press the buttons you want as A, B, Start and Select. Button hints are shown on screen in the menus. Then, in game:</p>
+    <dl class="controls">
+      <dt>Select</dt>          <dd>NES Select</dd>
+      <dt>Select, held 1s</dt> <dd>In-game menu: save and load state, reset, game list, power off</dd>
+      <dt>Select + A</dt>      <dd>Screenshot</dd>
+      <dt>Select + B</dt>      <dd><em class="hl">Lazy finger</em> (hold A or B to repeat) on/off</dd>
+      <dt>Select + Down</dt>   <dd>Status line on/off</dd>
+      <dt>Select + Up</dt>     <dd>Credits</dd>
+    </dl>
+    <p class="footnote">The second pad you connect is Player 2.</p>
+  </div>
+</section>
+
+<section id="support" class="band">
+  <div class="support narrow">
+    <p>nes-pi is <a href="https://github.com/alessioscand/nes-pi">free software</a>. If you like it, please consider supporting me:</p>
+    <a class="button button-pink" href="https://paypal.me/alescandy" target="_blank" rel="noopener"><svg aria-hidden="true" width="14" height="12" viewBox="0 0 7 6" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2h-1v1h-1v1h-1v1H3V5H2V4H1V3H0V1h1z" fill="#E40058"/></svg>Buy me a coffee</a>
+    <p class="footnote">Siblings: <a href="https://alessioscand.github.io/neo-pi/">neo-pi</a> · <a href="https://alessioscand.github.io/m92-pi/">m92-pi</a></p>
+  </div>
+</section>
+
+<footer class="band">
+  <div class="footer wide">
+    <span>nes-pi is a <span class="human">human-led</span>, vibe-coded experiment by Alessio Scanderebech · free software, GPLv3</span>
+    <a href="https://github.com/alessioscand/nes-pi">Source code on GitHub</a>
+    <span>NES is a trademark of Nintendo. Not affiliated with Nintendo.</span>
+  </div>
+</footer>
+
+<dialog class="viewer" aria-label="Screenshot at real size">
+  <img alt="">
+  <p></p>
+  <button class="prev" aria-label="Previous">&lsaquo;</button>
+  <button class="next" aria-label="Next">&rsaquo;</button>
+  <button class="close" aria-label="Close" autofocus>&times;</button>
+</dialog>
+
+<script>
+/* The viewer: a click on a screenshot opens it at its real size */
+const viewer = document.querySelector('.viewer');
+const shots = [...document.querySelectorAll('.shots figure')];
+let current = 0;
+
+function show(i) {
+  current = (i + shots.length) % shots.length;
+  const img = shots[current].querySelector('img');
+  viewer.querySelector('img').src = img.src;
+  viewer.querySelector('img').alt = img.alt;
+  viewer.querySelector('p').textContent = shots[current].querySelector('figcaption').textContent;
+  if (!viewer.open) viewer.showModal();
+}
+
+shots.forEach((f, i) => f.querySelector('img').addEventListener('click', () => show(i)));
+viewer.querySelector('.prev').addEventListener('click', () => show(current - 1));
+viewer.querySelector('.next').addEventListener('click', () => show(current + 1));
+viewer.querySelector('.close').addEventListener('click', () => viewer.close());
+viewer.addEventListener('click', e => { if (e.target === viewer) viewer.close(); });
+document.addEventListener('keydown', e => {
+  if (!viewer.open) return;
+  if (e.key === 'ArrowLeft') show(current - 1);
+  if (e.key === 'ArrowRight') show(current + 1);
+});
+
+/* Beam racing: 50 ms (three frames) replayed every 6 s; Luigi's jump
+   reaches each TV line by line */
+(() => {
+  const PERIOD = 6;                  // seconds per pass
+  const FRAME = 1 / 3;               // one frame, as a fraction of the pass
+  const W = 176, H = 130;            // the size of the two pictures
+  const BG = '#8FC0FF', GOLD = '#F8B800';
+  const before = new Image(); before.src = 'img/tv-before.png';
+  const after  = new Image(); after.src  = 'img/tv-after.png';
+
+  const tracks  = [...document.querySelectorAll('.track')];
+  const tvs     = [...document.querySelectorAll('.tv')];
+  const readout = document.querySelector('.readout');
+
+  for (const e of document.querySelectorAll('.event')) {
+    e.style.left = (e.dataset.at * 100) + '%';
+    if (e.dataset.width) e.style.width = (e.dataset.width * 100) + '%';
+  }
+
+  function drawTV(canvas, f) {
+    const g = canvas.getContext('2d');
+    if (!before.complete || !after.complete) return;
+    g.drawImage(before, 0, 0);
+    const rows = Math.max(0, Math.min(H, Math.floor((f - canvas.dataset.shown) / FRAME * H)));
+    if (rows > 0) {
+      g.drawImage(after, 0, 0, W, rows, 0, 0, W, rows);
+      if (rows < H) {                    // the line being sent
+        g.fillStyle = BG;
+        g.fillRect(0, rows - 2, W, 8);
+        g.fillStyle = GOLD;
+        g.fillRect(0, rows, W, 4);
+      }
+    }
+  }
+
+  function draw(f) {                     // f: 0..1 over 50 ms
+    for (const t of tracks) {
+      t.querySelector('.playhead').style.left = (f * 100) + '%';
+      for (const e of t.querySelectorAll('.event')) e.classList.toggle('on', e.dataset.at <= f);
+    }
+    tvs.forEach(c => drawTV(c, f));
+    const [ours, theirs] = tvs.map(c => +c.dataset.shown);
+    readout.textContent = (f * 50).toFixed(1) + ' ms' +
+      (f >= theirs ? ' · with double buffering the answer starts, '
+                     + ((theirs - ours) * 50).toFixed(1) + ' ms later'
+       : f >= ours ? ' · with beam racing the answer is on its way to the TV' : '');
+  }
+
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    after.onload = before.onload = () => draw(.7);
+    draw(.7);
+    return;
+  }
+  const t0 = performance.now();
+  (function tick(now) {
+    draw(((now - t0) / 1000 % PERIOD) / PERIOD);
+    requestAnimationFrame(tick);
+  })(t0);
+})();
+</script>
+</body>
+</html>

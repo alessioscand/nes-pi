@@ -1,0 +1,62 @@
+#
+# nes-pi Makefile (generated per target by build.sh)
+#
+CIRCLEHOME = @CIRCLEHOME@
+
+OBJS	= main.o kernel.o console.o games.o settings.o menus.o gameloop.o bench.o \
+	  report.o racing.o frame.o \
+	  video.o ui.o fontdata.o ziphelp.o nes_sys.o miniz.o composite.o \
+	  audio.o input.o raster.o race.o profile.o fbmap.o stats.o pacing.o tvcore.o
+
+# Nestopia (C++ with exceptions and the standard library) is built apart,
+# with its own flags, into libnst.a: Circle's rules (no exceptions, no
+# standard C++ library) apply to everything else
+LIBS	= libnst.a \
+	  $(CIRCLEHOME)/addon/fatfs/libfatfs.a \
+	  $(CIRCLEHOME)/addon/SDCard/libsdcard.a \
+	  $(CIRCLEHOME)/lib/usb/libusb.a \
+	  $(CIRCLEHOME)/lib/input/libinput.a \
+	  $(CIRCLEHOME)/lib/sound/libsound.a \
+	  $(CIRCLEHOME)/lib/fs/libfs.a \
+	  $(CIRCLEHOME)/lib/libcircle.a
+
+EXTRAINCLUDE = -I @SRC@ -I @COMMON@ -I @MINIZ@ -isystem @SNESNTSC@
+
+C_STANDARD = -std=gnu11
+OPTIMIZE = -O2
+
+DEFINE += -DNDEBUG -DMINIZ_NO_STDIO -DMINIZ_NO_TIME
+CFLAGS += -fno-math-errno -Wextra -Wshadow -Wno-unused-parameter	# Circle's headers have unused parameters
+
+include $(CIRCLEHOME)/Rules.mk
+
+# ---- Nestopia --------------------------------------------------------------
+NSTDIR	 = nst
+NSTSRC	:= $(shell find $(NSTDIR)/core -name '*.cpp' ! -name NstZlib.cpp) nes_core.cpp
+NSTOBJ	:= $(NSTSRC:.cpp=.nst.o)
+NSTFLAGS = $(ARCH) -O3 -std=gnu++11 -fexceptions -fno-math-errno \
+	   -ffunction-sections -fdata-sections -w \
+	   -DNDEBUG -DNST_NO_ZLIB -DNST_NO_HQ2X -DNST_NO_2XSAI -DNST_NO_SCALEX -DNST_NO_XBR \
+	   -I $(NSTDIR)/core -I $(NSTDIR)/core/api -I $(NSTDIR) -I @SRC@ -I @COMMON@
+
+%.nst.o: %.cpp
+	@echo "  CPP   $@"
+	@$(CPP) $(NSTFLAGS) -c -o $@ $<
+
+libnst.a: $(NSTOBJ)
+	@echo "  AR    $@"
+	@rm -f $@
+	@$(AR) cr $@ $(NSTOBJ)
+
+# the C++ runtime from the toolchain: standard library, exception support,
+# newlib (its system calls are in nes_sys.c); the unwinder is in libgcc.a,
+# which Circle links already; crtbegin/crtend
+# register the exception tables at start-up (as Circle does with STDLIB_SUPPORT=3)
+EXTRALIBS += "$(shell $(CPP) $(ARCH) -print-file-name=libstdc++.a)" \
+	     "$(shell $(CPP) $(ARCH) -print-file-name=libsupc++.a)" \
+	     "$(shell $(CPP) $(ARCH) -print-file-name=libm.a)" \
+	     "$(shell $(CPP) $(ARCH) -print-file-name=libc.a)"
+CRTBEGIN = "$(shell $(CPP) $(ARCH) -print-file-name=crtbegin.o)"
+CRTEND   = "$(shell $(CPP) $(ARCH) -print-file-name=crtend.o)"
+
+-include $(DEPS)

@@ -1,0 +1,42 @@
+# nes-pi - Raspberry Pi 3 and 4
+arm_64bit=1
+kernel_address=0x80000
+initial_turbo=0
+
+# HDMI always on (even if the TV is switched on later), no border, audio
+hdmi_force_hotplug=1
+disable_overscan=1
+hdmi_drive=2
+framebuffer_ignore_alpha=1
+
+# 1080p 60 Hz. No picture? Put a # in front of both lines.
+# For 720p, change hdmi_mode=16 to hdmi_mode=4.
+hdmi_group=1
+hdmi_mode=16
+
+# Sharp pixels from the hardware scaler; name in the TV's source list
+scaling_kernel=8
+cec_osd_name=NES-PI
+
+# Fast start-up, fixed GPU clock
+disable_splash=1
+boot_delay=0
+force_eeprom_read=0
+core_freq_fixed=1
+
+# Overclock: remove the # in front of arm_freq (heatsink needed)
+[pi3]
+kernel=kernel8.img
+#arm_freq=1300
+
+[pi3+]
+kernel=kernel8.img
+#arm_freq=1500
+
+[pi4]
+armstub=armstub8-rpi4.bin
+kernel=kernel8-rpi4.img
+max_framebuffers=2
+#arm_freq=1900
+
+[all]

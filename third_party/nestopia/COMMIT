@@ -1,0 +1,8 @@
+7b5c87d8dc3c817211545449683d1fcd897324ca Sun Sep 13 15:53:05 2026 -0600 (github.com/0ldsk00l/nestopia, source/core)
++ core fixes from github.com/libretro/nestopia, applied in this order:
+  92578fd NstApu: Fix edge cases uncovered by dmc_dma_start_test_v3.nes (2026-09-18)
+  3c82752 core: Misc initialization/determinism fixes (2026-10-11)
+  e736be2 NstApu: Carry the DMC clock's lag across a state (2026-10-11)
+  135dfa6 NstCpu: Fill RAM with a value per byte for the random power-on state (2026-10-11)
+  06a8949 NstBoardNamcot163: RAM power-on state fixes (2026-10-14)
+  f1e02d1 NstApu: DMC/DMA accuracy fix (2026-10-31)
