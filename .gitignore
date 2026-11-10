@@ -16,3 +16,5 @@ firmware/
 *.st1
 dist/sd/nespi/*
 !dist/sd/nespi/PUT_GAMES_HERE.txt
+# the Pi firmware has .elf files of its own
+!third_party/rpi-firmware/*.elf
