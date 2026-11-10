@@ -58,6 +58,13 @@ void CKernel::ReportWindow (boolean bFinal)
 		  m_CPUThrottle.GetClockRate () / 1000000, m_CPUThrottle.GetTemperature ());
 	Log (Line, COLOR_TEXT);
 
+	unsigned nErrors = nes_take_frame_errors ();
+	if (nErrors)
+	{
+		snprintf (Line, sizeof Line, "   Nestopia: %u frames with an error (%s)", nErrors, nes_last_error ());
+		Log (Line, COLOR_ERR);
+	}
+
 	// TV filter: per frame (filtering vs drawing on the screen)
 	unsigned nFilterUs, nDrawUs, nTvLines;
 	TvTakeStats (&nFilterUs, &nDrawUs, &nTvLines);

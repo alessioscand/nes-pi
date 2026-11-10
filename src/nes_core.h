@@ -44,6 +44,10 @@ const char *nes_board_name (void);		// mapper / board of the loaded game
 // then every line; nSamples mono samples are written to pAudio
 void nes_frame (unsigned nPad0, unsigned nPad1, int16_t *pAudio, unsigned nSamples);
 
+// frames the core stopped with an error since the last call (nes_last_error
+// says what); the game goes on with the next frame
+unsigned nes_take_frame_errors (void);
+
 // called at the end of every line of the frame: nLine -1 is the pre-render
 // line (pPixels = NULL), 0..239 the picture (256 palette indices each)
 typedef void TNesLineHook (int nLine, const uint16_t *pPixels);

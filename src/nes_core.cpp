@@ -29,6 +29,7 @@ static char s_Board[48] = "";
 static TNesBatteryLoad *s_pBatteryLoad = 0;
 static TNesBatterySave *s_pBatterySave = 0;
 static bool s_bLoaded = false;
+static unsigned s_nFrameErrors = 0;	// frames the core stopped with an error
 
 static void SetError (const char *pWhat, Nes::Result nResult)
 {
@@ -294,7 +295,16 @@ extern "C" void nes_frame (unsigned nPad0, unsigned nPad1, int16_t *pAudio, unsi
 	}								// lines go out one by one
 	catch (...)
 	{
+		std::snprintf (s_Error, sizeof s_Error, "the core stopped a frame with an error");
+		s_nFrameErrors++;
 	}
+}
+
+extern "C" unsigned nes_take_frame_errors (void)
+{
+	unsigned n = s_nFrameErrors;
+	s_nFrameErrors = 0;
+	return n;
 }
 
 extern "C" void nes_set_ppu_sync (int bOn)
