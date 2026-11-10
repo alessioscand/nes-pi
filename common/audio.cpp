@@ -77,7 +77,7 @@ void CAudioOut::WriteFrame (const s16 *pSamples, unsigned nFrames)
 	m_nAdjust += nDelta;
 
 	unsigned nOut = nFrames + nDelta;
-	if (nDelta == 0)
+	if (nDelta == 0 || nFrames < 16)	// a very short block goes out as it is
 	{
 		m_pSound->Write (pSamples, nFrames * 4);
 		return;
