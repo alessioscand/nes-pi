@@ -119,10 +119,34 @@ void CKernel::ApplyVideoMode (void)
 	Log (Line, COLOR_TEXT);
 }
 
+// lines starting with '#' are comments: blanked, so their options do not count
+static void BlankComments (char *pText)
+{
+	boolean bLineStart = TRUE, bComment = FALSE;
+	for (char *p = pText; *p; p++)
+	{
+		if (*p == '\n')
+		{
+			bLineStart = TRUE;
+			bComment = FALSE;
+			continue;
+		}
+		if (bLineStart && *p != ' ' && *p != '\t')
+		{
+			bComment = *p == '#';
+			bLineStart = FALSE;
+		}
+		if (bComment)
+		{
+			*p = ' ';
+		}
+	}
+}
+
 void CKernel::LoadConfig (void)
 {
 	FIL File;
-	char Text[256];
+	char Text[1024];
 	UINT nRead = 0;
 	if (f_open (&File, CFG_PATH, FA_READ) != FR_OK)
 	{
@@ -131,6 +155,7 @@ void CKernel::LoadConfig (void)
 	f_read (&File, Text, sizeof Text - 1, &nRead);
 	f_close (&File);
 	Text[nRead] = '\0';
+	BlankComments (Text);
 
 	if (strstr (Text, "scaler=cpu"))	m_bHVS = FALSE;
 	// USB pads are polled every 1 ms (like usbhid.jspoll=1 on Linux);
