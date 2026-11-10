@@ -26,7 +26,12 @@
 #define BTN_F		(1u << 11)
 #define BTN_MENU	(1u << 12)	// keyboard Esc (= Select+Start)
 
-#define MAX_PADS	4
+// one pad per player, as many players as the project has (project.h): pads
+// connected beyond them are not taken
+#ifndef PROJECT_PLAYERS
+#error "project.h: PROJECT_PLAYERS (1-4) missing"
+#endif
+#define MAX_PADS	PROJECT_PLAYERS
 
 // Controls that can be assigned (bit n of a mapping = logical bit n above)
 #if PROJECT_BUTTONS == 6
@@ -63,15 +68,20 @@ public:
 	// Scan for newly attached devices (task level, not every frame)
 	void UpdateDevices (void);
 
-	// Latest state of a player, 0-3 (pads in connection order; the keyboard
-	// adds to the first player)
+	// Latest state of a player, 0 to MAX_PADS - 1 (pads in connection order;
+	// the keyboard adds to the first player)
 	u32 Get (unsigned nPlayer) const;
 
 	// lag measurement: time (CTimer ticks, us) of the oldest pad report that
 	// changed the controls and has not been taken yet; FALSE if none
 	boolean TakeChange (unsigned *pTicks);
 	// Any player: used by the menus
-	u32 GetAny (void) const	{ return Get (0) | Get (1); }
+	u32 GetAny (void) const
+	{
+		u32 n = 0;
+		for (unsigned p = 0; p < MAX_PADS; p++) n |= Get (p);
+		return n;
+	}
 
 	unsigned GetPadCount (void) const;
 

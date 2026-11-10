@@ -1,15 +1,15 @@
-nes-pi 1.0.0 - Bare-metal NES emulator for Raspberry Pi 3 and 4
+nes-pi 1.0.1 - Bare-metal NES emulator for Raspberry Pi 3 and 4
 ============================================================================
 
-WHAT'S NEW IN 1.0.0
+WHAT'S NEW IN 1.0.1
 
-  - Beam racing: the picture reaches the TV line by line, 2-4 ms after
-    the pads are read.
-  - Pixel perfect: integer scaling, and five TV filters from sharp
-    square pixels to grandma's TV, with no added lag.
-  - Game list with each game's region (NTSC, PAL, DENDY); long titles
-    scroll.
-  - Save states, cartridge saves, screenshots, lazy finger, two players.
+  - In nespi/nespi.cfg, a line starting with # is a comment.
+  - Only two pads are used: a third one is ignored.
+  - LOG.TXT reports it if the emulator stops a frame with an error.
+  - Alignment of the code shared with the other projects (neo-pi,
+    m92-pi).
+  - To update a card, copy the new files over the old ones: games,
+    saves, settings and pads.cfg in nespi are kept and work as before.
 
 SET-UP
 

@@ -5,7 +5,7 @@
 #define PROJECT_H
 
 #define PROJECT_NAME	"nes-pi"
-#define PROJECT_VERSION	"1.0.0"
+#define PROJECT_VERSION	"1.0.1"
 
 /* The emulated picture (with overscan=off: all 240 lines) */
 #define PROJECT_WIDTH	256
@@ -15,6 +15,9 @@
    0x00RRGGBB), the filtered line out (COMP_OUT_W) */
 #define PROJECT_TV_IN_BYTES	(256 * 4)
 #define PROJECT_TV_OUT_W	602
+
+/* Players: one pad each (common/input) */
+#define PROJECT_PLAYERS	2
 
 /* Buttons besides the directions, START and SELECT: A B C D (C D = turbo) */
 #define PROJECT_BUTTONS	4
