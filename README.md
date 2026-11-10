@@ -216,7 +216,7 @@ partner Claude, standing on the shoulders of giants:
 |---|---|
 | Bare-metal system | [Circle](https://github.com/rsta2/circle) by Rene Stange |
 | NES core | [Nestopia](https://github.com/0ldsk00l/nestopia) by Martin Freij, maintained as Nestopia UE by Phil Smith, Rupert Carmichael and contributors |
-| NTSC filter | nes_ntsc by Shay Green (blargg) |
+| NTSC filter | snes_ntsc by Shay Green (blargg) |
 | Zip and PNG | miniz by Rich Geldreich |
 | Menu font | "Matinee" from [ZX Origins](https://damieng.com/typography/zx-origins/) by Damien Guard |
 
@@ -226,7 +226,7 @@ partner Claude, standing on the shoulders of giants:
 nes-pi is free software, released under the [GNU General Public License
 v3](LICENSE) or any later version, as required by Circle (GPLv3). The
 third-party components keep their own licences (Nestopia: GPL v2 or later;
-nes_ntsc: LGPL; MIT and others); the full texts are in
+snes_ntsc: LGPL; MIT and others); the full texts are in
 [`dist/sd/LICENSES.txt`](dist/sd/LICENSES.txt).
 
 NES is a trademark of Nintendo. nes-pi is an independent project, not
