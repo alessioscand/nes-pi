@@ -144,7 +144,7 @@ TShutdownMode CKernel::Run (void)
 
 	if (m_Audio.Initialize (&m_Interrupt))
 	{
-		Log ("Audio HDMI: OK (48 kHz)", COLOR_OK);
+		Log ("HDMI audio: OK (48 kHz)", COLOR_OK);
 	}
 	else
 	{
