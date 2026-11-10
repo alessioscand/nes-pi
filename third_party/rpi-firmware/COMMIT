@@ -1,0 +1,9 @@
+Raspberry Pi firmware, unmodified: https://github.com/raspberrypi/firmware
+commit 0641c5bf (the one Circle uses): bootcode.bin, start.elf, start4.elf,
+fixup.dat, fixup4.dat, bcm2711-rpi-4-b.dtb, bcm2711-rpi-400.dtb,
+bcm2711-rpi-cm4.dtb, LICENCE.broadcom.
+
+armstub8-rpi4.bin is Circle's own (boot/ of Circle commit 7a81e1b).
+
+make_release.sh copies all of these (except this file) to the root of the
+card. LICENSES.txt on the card refers to LICENCE.broadcom.

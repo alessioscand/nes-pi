@@ -21,10 +21,14 @@ for K in "$K4" "$K3"; do
 	[ "$K" -nt src/project.h ] || fail "$K is older than src/project.h: rebuild"
 done
 
-# firmware and configuration files in dist/sd
+# the Raspberry Pi firmware (third_party/rpi-firmware)
 for F in bootcode.bin start.elf start4.elf fixup.dat fixup4.dat armstub8-rpi4.bin \
-	 bcm2711-rpi-4-b.dtb bcm2711-rpi-400.dtb bcm2711-rpi-cm4.dtb LICENCE.broadcom \
-	 config.txt cmdline.txt README.txt LICENSES.txt nespi/PUT_GAMES_HERE.txt; do
+	 bcm2711-rpi-4-b.dtb bcm2711-rpi-400.dtb bcm2711-rpi-cm4.dtb LICENCE.broadcom; do
+	[ -f "third_party/rpi-firmware/$F" ] || fail "third_party/rpi-firmware/$F missing"
+done
+
+# configuration files in dist/sd
+for F in config.txt cmdline.txt README.txt LICENSES.txt nespi/PUT_GAMES_HERE.txt; do
 	[ -f "dist/sd/$F" ] || fail "dist/sd/$F missing"
 done
 grep -q "^nes-pi $VERSION " dist/sd/README.txt || fail "dist/sd/README.txt does not start with 'nes-pi $VERSION'"
@@ -33,6 +37,7 @@ grep -q "^nes-pi $VERSION " dist/sd/README.txt || fail "dist/sd/README.txt does 
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT
 cp -r dist/sd/. "$STAGE/"
+find third_party/rpi-firmware -type f ! -name COMMIT -exec cp {} "$STAGE/" \;
 rm -f "$STAGE"/kernel*.img
 cp "$K4" "$K3" "$STAGE/"
 # the nespi folder ships with the placeholder only: no games, BENCH,

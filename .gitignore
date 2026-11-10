@@ -16,8 +16,3 @@ firmware/
 *.st1
 dist/sd/nespi/*
 !dist/sd/nespi/PUT_GAMES_HERE.txt
-# Raspberry Pi firmware: copied into dist/sd/ when building (see BUILD.md)
-dist/sd/*.bin
-dist/sd/*.dat
-dist/sd/*.dtb
-dist/sd/LICENCE.broadcom

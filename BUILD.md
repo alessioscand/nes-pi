@@ -37,7 +37,9 @@ Build host: Linux x86_64.
    malloc to Circle's allocator. `src/nes_core.cpp` is the only file that sees
    the Nestopia API; the rest of nes-pi uses the C interface in `src/nes_core.h`.
 5. `./build.sh all` builds `build/rpi4/kernel8-rpi4.img` and `build/rpi3/kernel8.img`.
-6. **Raspberry Pi firmware**: raspberrypi/firmware commit 0641c5bf, copied into `dist/sd/`.
+6. **Raspberry Pi firmware** in `third_party/rpi-firmware`, unmodified (raspberrypi/firmware
+   commit 0641c5bf, the one Circle uses; see `COMMIT`), with Circle's armstub8-rpi4.bin.
+   `make_release.sh` puts them on the card.
 7. `./make_release.sh` checks and packages `dist/nes-pi-<version>-sd.zip`.
 
 ## Source files
@@ -101,6 +103,6 @@ keep the `.elf` of the kernel that produced it:
 
 ## Release
 `./make_release.sh` (after `./build.sh all`) checks that both kernels are built
-and carry the version in `src/project.h`, that the firmware files are in `dist/sd/`
-and that no games, BENCH file or other user data are in the package, then
+and carry the version in `src/project.h`, that the firmware (`third_party/rpi-firmware/`) and the
+card files (`dist/sd/`) are there and that no games, BENCH file or other user data are in the package, then
 writes `dist/nes-pi-<version>-sd.zip`.
