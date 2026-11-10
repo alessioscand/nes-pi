@@ -2,7 +2,7 @@
  * HDMI audio output
  *
  * About 800 stereo frames at 48 kHz arrive per emulated frame (from the
- * resampler in kernel.cpp). The display and the HDMI audio clock are not exactly locked, so
+ * project's frame code). The display and the HDMI audio clock are not exactly locked, so
  * the queue level is kept around TARGET by stretching or shrinking each block
  * by a few samples (linear interpolation, inaudible).
  */

@@ -1,5 +1,5 @@
 /*
- * USB gamepads and keyboard -> up to four M92 control panels
+ * USB gamepads and keyboard -> the logical buttons of up to four players
  */
 #ifndef INPUT_H
 #define INPUT_H
@@ -63,7 +63,8 @@ public:
 	// Scan for newly attached devices (task level, not every frame)
 	void UpdateDevices (void);
 
-	// Latest state of player 0 or 1 (pads in connection order; keyboard = player 1)
+	// Latest state of a player, 0-3 (pads in connection order; the keyboard
+	// adds to the first player)
 	u32 Get (unsigned nPlayer) const;
 
 	// lag measurement: time (CTimer ticks, us) of the oldest pad report that
