@@ -59,6 +59,7 @@ const TUITheme g_Theme =
 	{0, 0},
 	BG_CELL,				// whole squares from the frame's corners
 	FALSE,					// thin lines
+	0,
 	0
 };
 

@@ -276,10 +276,10 @@ boolean CVideoOut::SetGameMode (unsigned nFilter, boolean bAllowHVS)
 	// outside it, then nSideShift game pixels further
 	const unsigned nSize = m_bBands ? 0 : 1;
 	m_nFrame = g_Theme.nFrame[nSize];
-	// 1080p with a fabric: the frame half a small diamond further out, the
-	// fabric still through the corners it had
+	// 1080p: the frame nFramePad further out, the fabric still through the
+	// corners it had
 	const boolean bMoat = g_Theme.nFrameColour == ThemeGround ();	// an invisible frame
-	const int nPad = m_nFrame > 0 && nSize == 0 && !bMoat ? g_Theme.nFabric / 8 : 0;
+	const int nPad = m_nFrame > 0 && nSize == 0 && !bMoat ? g_Theme.nFramePad : 0;
 	m_nFrame += nPad;
 	const int nRoom = (int) (m_nGameY / m_nM) - 2;
 	if (m_nFrame > nRoom && !bMoat)		// a moat may go off screen

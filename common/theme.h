@@ -60,6 +60,9 @@ struct TUITheme
 	// without a frame: whole squares of nSquare game pixels (lines from the
 	// screen's centre), a square's width clear around the picture (0: dither)
 	int		 nSquare;
+	// 1080p: the frame this many game pixels further out, the grid still
+	// through the corners it had (0: the frame on the grid)
+	int		 nFramePad;
 };
 
 extern const TUITheme g_Theme;
