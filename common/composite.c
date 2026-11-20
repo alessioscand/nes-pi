@@ -1,7 +1,6 @@
 /*
- * The TV filter: blargg's snes_ntsc 0.2.2 (LGPL 2.1+, third_party/snes_ntsc,
- * unmodified) with our own configuration: RGB565 in (converted from
- * 0x00RRGGBB), 0x00RRGGBB out, one line at a time.
+ * TV filter: blargg's snes_ntsc 0.2.2 (LGPL 2.1+, unmodified), RGB565 in,
+ * 0x00RRGGBB out, one line at a time.
  */
 #define SNES_NTSC_CONFIG_H	/* the library's own configuration file is not used */
 #define SNES_NTSC_IN_FORMAT	SNES_NTSC_RGB16
@@ -9,10 +8,8 @@
 #define SNES_NTSC_IN_T		unsigned short
 #define SNES_NTSC_ADJ_IN(in)	in
 
-/* The library keeps its tables as unsigned long: 64 bits on the Pi, twice the
-   memory (and cache) its 32-bit arithmetic needs. Compiled with long = int
-   it gives exactly the same pixels (checked line by line) with half the
-   tables. The system headers it uses come first, untouched. */
+/* long = int: the same pixels with half the tables (unsigned long is 64
+   bits here); the system headers come first, untouched. */
 #include <assert.h>
 #include <math.h>
 #include <limits.h>

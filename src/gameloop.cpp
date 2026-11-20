@@ -9,7 +9,7 @@
 #include "racing.h"
 #include "stats.h"
 #include "smp.h"
-#include "fontdata.h"
+#include "fonts.h"
 
 extern "C" {
 void *nespi_png_encode (const void *pRGB, int nWidth, int nHeight, size_t *pSize);
@@ -54,13 +54,13 @@ void CKernel::SetupCoreOnce (void)
 	ApplyPalette ();
 	nes_set_unlimited_sprites (g_Pic.bUnlimSprites);
 
-	// TV filter: core 1 does the work (if it starts)
+	// TV filter: core 2 does the work (if it starts)
 	boolean bCore = StartCores ();
 	FrameSetTvMode (NTSC_COMPOSITE);		// the tables, for the timing check
-	unsigned nUs = FrameTvTimeUs (NES_H - 2 * OVERSCAN_LINES);
+	unsigned nUs = FrameTvTimeUs (NES_H);
 	char Msg[100];
 	if (bCore)
-		snprintf (Msg, sizeof Msg, "TV filter: on core 1, a frame of lines in %u.%u ms",
+		snprintf (Msg, sizeof Msg, "TV filter: on core 2, a frame of lines in %u.%u ms",
 			  nUs / 1000, (nUs % 1000) / 100);
 	else
 		snprintf (Msg, sizeof Msg, "TV filter: other cores not started, on core 0 (a frame in %u.%u ms)",
@@ -109,6 +109,7 @@ static unsigned WaitForFrameStart (boolean bRace, boolean bPlaying, unsigned nLa
 void CKernel::RunGame (void)
 {
 	PlayStart ();
+	UpdateBezel ();			// the grid around the picture (or black)
 	m_pInput->RestartDiagnostics ();		// log the pad reports of this game too
 	m_ActLED.On ();			// steady while playing (no firmware call every second)
 
@@ -120,16 +121,16 @@ void CKernel::RunGame (void)
 	DelayStatsReset ();
 	DelayRestart ();
 	g_Race.bGame = g_Race.bReady;
-	m_Video.SetSource (FrameSource ());
 	if (g_Race.bGame)
 	{
 		// a game that gave up on beam racing keeps the double buffer until it is left:
 		// the next game started from the list tries again
 		g_Race.pRacer->Rearm ();
-		g_Race.pRacer->SetGeometry (m_Video.GetGameY (), m_Video.GetCPUScale (), m_Video.GetHVSFactor (), g_NesSource.nH);
+		g_Race.pRacer->SetGeometry (m_Video.GetGameY (), m_Video.GetCPUScale (), m_Video.GetHVSFactor ());
 		g_Race.pRacer->Restart ();
 		g_Race.pRacer->ResetStats ();
 	}
+	m_bVideoChanged = FALSE;
 	{
 		unsigned nOld;
 		m_pInput->TakeChange (&nOld);	// a press from the list does not count
@@ -153,7 +154,7 @@ void CKernel::RunGame (void)
 			if (nPad >= 0)
 			{
 				// new pad during the game: pause and set it up
-				SnapshotForUI ();
+				m_pUI->SnapshotGame (g_VideoBuf);
 				m_Video.SetRacing (FALSE);
 				RunMapping ((unsigned) nPad, TRUE);
 				ResetGameStats ();
@@ -166,7 +167,7 @@ void CKernel::RunGame (void)
 		const boolean bRace = g_Race.bGame && !m_Play.bMenu;
 		if (!m_Play.bMenu)
 		{
-			m_Video.SetSource (FrameSource ());
+			UpdateBezel ();		// the border back where a menu was (nothing to do else)
 		}
 		m_Video.SetRacing (bRace);
 		const unsigned nGoUs = WaitForFrameStart (bRace, !m_Play.bMenu, nLastVSync, &t0);
@@ -186,7 +187,7 @@ void CKernel::RunGame (void)
 			{
 				// Select + Up: credits over the paused game (B closes)
 				g_Pad[0] = g_Pad[1] = 0;
-				SnapshotForUI ();
+				m_pUI->SnapshotGame (g_VideoBuf);
 				m_Video.SetRacing (FALSE);
 				RunCredits ();
 				PlayWaitRelease ();
@@ -436,7 +437,7 @@ void CKernel::PlayOpenMenu (void)
 		FILINFO Info;
 		P.bSaved = f_stat (Path, &Info) == FR_OK;
 	}
-	SnapshotForUI ();
+	m_pUI->SnapshotGame (g_VideoBuf);
 	m_Video.SetRacing (FALSE);
 	m_pInput->FlushDiagnostics ();
 	ReportWindow (TRUE);
@@ -606,49 +607,51 @@ boolean CKernel::PlayMenu (const u32 Pad[2])
 		static const TButtonHint Hints[2] = {{'A', "SELECT"}, {'B', "RESUME"}};
 		m_pUI->DrawPanelMenu (TRUE, m_pGames[m_nLoaded].Name, Items, nIds, P.nMenuSel,
 				      P.MenuMsg, P.nMenuMsgColor, Hints, 2, 0);
-		m_Video.SetSource (FrameUISource ());
-		m_Video.DrawGame (FrameUIBuffer (m_pUI->GetBuffer ()), TRUE);
+		FrameDrawPicture (m_pUI->GetBuffer ());
 	}
 	else
 	{
-		m_Video.SetSource (FrameSource ());	// the menu closes: the paused game
-		m_Video.DrawGame (FrameBuffer ());
+		UpdateBezel ();			// the menu closes: the border, the paused game
+		FrameDraw ();
 	}
 	return TRUE;
 }
 
-// black bands: the status line at the bottom, messages at the top (only while
-// playing)
+// beside the picture, only while playing: the status line in the left
+// column, messages in the right one
 void CKernel::PlayDrawBands (void)
 {
 	TPlay &P = m_Play;
 	if (m_bStatusOn && !P.bMenu && P.bStatusReady)
 	{
+		// "FPS 60", "LOAD 42%", "CPU 48°", "RCE 3.2" (beam racing: pad to
+		// picture, ms) or "DLY 3.2" (frame delay, ms), "1080P 4X", "CPU+HVS":
+		// short, so that at 720p every line fits the narrowest column
 		const CScreen::TTextSpan Spans[] =
 		{
-			{P.StFps, P.nFpsColor}, {"   LOAD ", UI_GREY}, {P.StLoad, P.nLoadColor},
-			{"   ", UI_GREY}, {P.StTemp, P.nTempColor},
-			{g_Race.bGame ? "   RACE " : "   DLY ", UI_GREY}, {P.StDelay, UI_WHITE},
-			{"   ", UI_GREY}, {P.StRes, UI_WHITE}, {P.StScale, UI_GREY}
+			{"FPS ", UI_GREY}, {P.StFps, P.nFpsColor}, {"\nLOAD ", UI_GREY}, {P.StLoad, P.nLoadColor},
+			{"\nCPU ", UI_GREY}, {P.StTemp, P.nTempColor},
+			{g_Race.bGame ? "\nRCE " : "\nDLY ", UI_GREY}, {P.StDelay, UI_WHITE},
+			{"\n", UI_GREY}, {P.StRes, UI_GREY}, {P.StScale, UI_GREY}
 		};
-		m_Video.DrawBandText (FALSE, Spans, sizeof Spans / sizeof Spans[0]);
+		m_Video.DrawSideText (FALSE, Spans, sizeof Spans / sizeof Spans[0]);
 		m_nClearStatus = 2;
 	}
 	else if (m_nClearStatus)
 	{
-		m_Video.DrawBandText (FALSE, 0, 0);
+		m_Video.DrawSideText (FALSE, 0, 0);
 		m_nClearStatus--;
 	}
 	if (P.nToast && !P.bMenu)
 	{
 		const CScreen::TTextSpan Span = {P.Toast, UI_WHITE};
-		m_Video.DrawBandText (TRUE, &Span, 1);
+		m_Video.DrawSideText (TRUE, &Span, 1);
 		P.nToast--;
 		P.nClearToast = 2;
 	}
 	else if (P.nClearToast)
 	{
-		m_Video.DrawBandText (TRUE, 0, 0);
+		m_Video.DrawSideText (TRUE, 0, 0);
 		P.nClearToast--;
 	}
 }
@@ -668,11 +671,11 @@ void CKernel::PlayStatusLine (unsigned nNow, unsigned *pNextDeadline)
 		Log ("firmware vsync does not block: switching to timer pacing", COLOR_ERR);
 	}
 
-	// 60 FPS / 59.8 FPS, load = worst frame of the second vs 16.7 ms
+	// 60 / 59.8 FPS, load = worst frame of the second vs 16.7 ms
 	if (nFPS100 >= 5995)
-		snprintf (P.StFps, sizeof P.StFps, "%u FPS", (nFPS100 + 50) / 100);
+		snprintf (P.StFps, sizeof P.StFps, "%u", (nFPS100 + 50) / 100);
 	else
-		snprintf (P.StFps, sizeof P.StFps, "%u.%u FPS", nFPS100 / 100, (nFPS100 % 100) / 10);
+		snprintf (P.StFps, sizeof P.StFps, "%u.%u", nFPS100 / 100, (nFPS100 % 100) / 10);
 	P.nFpsColor = nFPS100 < 5990 ? UI_WARN : UI_WHITE;
 	unsigned nLoad = P.nWorkMax * 100 / 16667;
 	snprintf (P.StLoad, sizeof P.StLoad, "%u%%", nLoad);
@@ -681,7 +684,7 @@ void CKernel::PlayStatusLine (unsigned nNow, unsigned *pNextDeadline)
 	{
 		P.nTemp = m_CPUThrottle.GetTemperature ();
 	}
-	snprintf (P.StTemp, sizeof P.StTemp, "%u" FONT_DEGREE "C", P.nTemp);
+	snprintf (P.StTemp, sizeof P.StTemp, "%u" FONT_DEGREE, P.nTemp);
 	P.nTempColor = P.nTemp > 75 ? UI_ERR : (P.nTemp > 65 ? UI_WARN : UI_WHITE);
 	snprintf (P.StRes, sizeof P.StRes, "%uP", m_Video.GetHeight ());
 	if (g_Race.bGame)
@@ -694,7 +697,7 @@ void CKernel::PlayStatusLine (unsigned nNow, unsigned *pNextDeadline)
 		snprintf (P.StDelay, sizeof P.StDelay, "%u.%u", g_Delay.nUs / 1000, (g_Delay.nUs % 1000) / 100);
 	}
 	unsigned k = m_Video.GetHVSFactor (), S = m_Video.GetScale ();
-	snprintf (P.StScale, sizeof P.StScale, " %uX %s", S,
+	snprintf (P.StScale, sizeof P.StScale, " %uX\n%s", S,	// the method on a line of its own
 		  k == S ? "HVS" : (k == 1 ? "CPU" : "CPU+HVS"));
 	P.bStatusReady = TRUE;
 
@@ -737,13 +740,18 @@ const char *CKernel::SaveScreenshot (void)
 	// the picture as shown (without the hidden overscan lines)
 	static u8 RGB[NES_W * NES_H * 3];
 	u8 *d = RGB;
-	const unsigned nShotH = g_NesSource.nH;
-	for (unsigned i = 0; i < NES_W * nShotH; i++)
+	const unsigned nTop = g_Pic.bOverscan ? OVERSCAN_LINES : 0;
+	const unsigned nShotH = NES_H - 2 * nTop;
+	for (unsigned y = 0; y < nShotH; y++)
 	{
-		u32 c = g_VideoBuf[g_NesSource.nY * NES_W + i];
-		*d++ = (u8) (c >> 16);
-		*d++ = (u8) (c >> 8);
-		*d++ = (u8) c;
+		const u32 *s = &g_VideoBuf[(GAME_SRC_Y + nTop + y) * GAME_SRC_PITCH + GAME_SRC_X];
+		for (unsigned x = 0; x < NES_W; x++)
+		{
+			u32 c = s[x];
+			*d++ = (u8) (c >> 16);
+			*d++ = (u8) (c >> 8);
+			*d++ = (u8) c;
+		}
 	}
 	size_t nSize = 0;
 	void *pPng = nespi_png_encode (RGB, NES_W, nShotH, &nSize);

@@ -1,7 +1,6 @@
 /*
- * The TV filter: blargg's snes_ntsc on an RGB picture (the library works on
- * any 15/16-bit RGB source), one line at a time. Each project chooses the
- * look (TCompLook); 0 = blargg's own composite.
+ * TV filter: blargg's snes_ntsc on an RGB picture, one line at a time; the
+ * look per project (TCompLook, 0 = blargg's composite).
  */
 #ifndef COMPOSITE_H
 #define COMPOSITE_H

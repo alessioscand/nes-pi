@@ -12,14 +12,15 @@
 
 CKernel *CKernel::s_pThis = 0;
 
-// core 1: the TV filter (tvcore.h); cores 2 and 3 stay idle
+// core 2: the TV filter (tvcore.h), as in the other projects; cores 1 and 3
+// stay idle
 class CTvFilterCore : public CMultiCoreSupport
 {
 public:
 	CTvFilterCore (void) : CMultiCoreSupport (CMemorySystem::Get ()) {}
 	void Run (unsigned nCore)
 	{
-		if (nCore == 1)
+		if (nCore == 2)
 		{
 			FbSetMair ();			// the framebuffer's write-combining type
 			TvWorkerRun ();
@@ -38,6 +39,7 @@ CKernel::CKernel (void)
 	m_bVideoOK (FALSE),
 	m_bSDOK (FALSE),
 	m_bQuiet (TRUE),		// black screen while booting; text only on errors
+	m_bVideoChanged (FALSE),
 	m_nLines (0),
 	m_nRepeat (0),
 	m_pGame (0),
@@ -48,6 +50,7 @@ CKernel::CKernel (void)
 	m_nShots (0),
 	m_nFilter (0),
 	m_bHVS (TRUE),
+	m_nBezel (BEZEL_GRID),
 	m_bVSync (TRUE),
 	m_bStatusOn (FALSE),
 	m_nClearStatus (0)
@@ -119,9 +122,10 @@ TShutdownMode CKernel::Run (void)
 	f_mkdir (SAVE_DIR);
 	f_mkdir (SHOT_DIR);
 	LoadConfig ();
-	m_nFilter = g_Pic.nTvMode == NTSC_OFF && g_Pic.bTvScanlines ? FILTER_SCAN_LIGHT : FILTER_NONE;	// TV FILTER decides
+	m_nFilter = g_Pic.nTvMode != NTSC_OFF ? FILTER_COMPOSITE		// TV FILTER decides
+		  : g_Pic.bTvScanlines ? FILTER_FAST : FILTER_NONE;
 
-	m_pUI = new CUI;		// no console font on the NES: the built-in one
+	m_pUI = new CUI;
 
 	// games
 	ScanGames ();
@@ -200,7 +204,7 @@ TShutdownMode CKernel::Run (void)
 	return ShutdownHalt;
 }
 
-// starts core 1 for the TV filter (once); FALSE: it is not running
+// starts core 2 for the TV filter (once); FALSE: it is not running
 boolean CKernel::StartCores (void)
 {
 	CTvFilterCore *pCores = new CTvFilterCore;

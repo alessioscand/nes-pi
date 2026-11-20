@@ -5,22 +5,30 @@
 #define PROJECT_H
 
 #define PROJECT_NAME	"nes-pi"
-#define PROJECT_VERSION	"1.0.1"
+#define PROJECT_VERSION	"1.2.0"
 
-/* The emulated picture (with overscan=off: all 240 lines) */
+/* The emulated picture: all 256 x 240 (the overscan is drawn black), in a
+   buffer as wide as the menus' canvas (304, common/screen.h) */
 #define PROJECT_WIDTH	256
 #define PROJECT_HEIGHT	240
+#define PROJECT_SRC_PITCH	304
+#define PROJECT_SRC_LINES	240
+#define PROJECT_SRC_X	24
+#define PROJECT_SRC_Y	0
 
-/* TV filter (common/tvcore, common/composite): one line in (256 pixels
-   0x00RRGGBB), the filtered line out (COMP_OUT_W) */
-#define PROJECT_TV_IN_BYTES	(256 * 4)
-#define PROJECT_TV_OUT_W	602
+/* TV filter (common/tvcore, common/composite): one line in (0x00RRGGBB), the
+   filtered line out; the game's 256 pixels give 602, the menus' 304 give 714 */
+#define PROJECT_TV_IN_BYTES	(304 * 4)
+#define PROJECT_TV_OUT_W	714
 
 /* Players: one pad each (common/input) */
 #define PROJECT_PLAYERS	2
 
 /* Buttons besides the directions, START and SELECT: A B C D (C D = turbo) */
 #define PROJECT_BUTTONS	4
+
+/* Each emulated frame starts with the vertical blank, after line 239 */
+#define PROJECT_PHASE_LINE	240
 
 /* Error codes = number of green LED blinks when the screen is unusable */
 #define PROJECT_ERR_FB    2   /* framebuffer / HDMI */

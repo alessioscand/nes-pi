@@ -3,29 +3,16 @@
  */
 #include "frame.h"
 #include "racing.h"
-#include "ui.h"
 #include "tvcore.h"
 #include "smp.h"
 #include <circle/util.h>
 
 TPicture g_Pic = {TRUE, NTSC_OFF, TRUE, NES_PALETTE_NESTOPIA, FALSE, {0}, 0};
 
-u32 g_VideoBuf[NES_W * NES_H] __attribute__ ((aligned (64)));
+// + 64: the TV filter copies PROJECT_TV_IN_BYTES from the picture's left
+// edge, past the last line's end
+u32 g_VideoBuf[GAME_SRC_PITCH * GAME_SRC_LINES + 64] __attribute__ ((aligned (64)));
 u16 g_IdxBuf[NES_W * NES_H];
-u32 g_NtscBuf[NTSC_OUT_W * NES_H] __attribute__ ((aligned (64)));
-
-#define UI_NTSC_W	COMP_OUT_WIDTH (UI_W)
-static u32 s_UINtsc[UI_NTSC_W * UI_H] __attribute__ ((aligned (64)));
-
-TVideoSource g_NesSource = {NES_W, NES_H - 2 * OVERSCAN_LINES, NES_W, 0, OVERSCAN_LINES, 0};
-// the TV filter's 602-pixel lines are shown half as wide per pixel (bHalfX),
-// which gives a 4:3 picture at the same height
-TVideoSource g_NtscSource = {NTSC_OUT_W, NES_H - 2 * OVERSCAN_LINES, NTSC_OUT_W, 0, OVERSCAN_LINES, 1};
-const TVideoSource g_UISource = {UI_W, UI_H, UI_SRC_PITCH, UI_SRC_X, UI_SRC_Y, 0};
-static const TVideoSource s_UINtscSource = {UI_NTSC_W, UI_H, UI_NTSC_W, 0, 0, 1};
-
-const TVideoSource &FrameSource (void)	{ return g_Pic.nTvMode != NTSC_OFF ? g_NtscSource : g_NesSource; }
-const u32 *FrameBuffer (void)		{ return g_Pic.nTvMode != NTSC_OFF ? g_NtscBuf : g_VideoBuf; }
 
 int16_t g_AudioBuf[2 * (AUDIO_FRAME + 64)] __attribute__ ((aligned (64)));
 static int16_t s_AudioMono[AUDIO_FRAME + 64];
@@ -47,23 +34,80 @@ static const TCompLook s_Looks[4] =
 static void *s_pTables = 0;		// the filter's tables (composite_init)
 static int s_nTablesMode = NTSC_OFF;	// the look they were built for
 
+#define GAME_NTSC_W	COMP_OUT_WIDTH (GAME_W)		// 602
+#define CANVAS_NTSC_W	COMP_OUT_WIDTH (CANVAS_W)	// 714
+static_assert (CANVAS_NTSC_W == PROJECT_TV_OUT_W, "project.h: PROJECT_TV_OUT_W");
+static_assert (CANVAS_W * 4 == PROJECT_TV_IN_BYTES, "project.h: PROJECT_TV_IN_BYTES");
+
 static unsigned s_nTvBurst = 0;		// colour burst phase of the frame (0-2)
+static boolean s_bTvCanvas = FALSE;	// the lines queued are the menus' canvas
 static CScreen *s_pVideo = 0;
-static u32 s_Line[PIC_MAX_W * 8], s_Dark[PIC_MAX_W * 8];	// core 0's scratch lines
-static u32 s_TvLine[2][PIC_MAX_W * 8], s_TvDark[2][PIC_MAX_W * 8];	// the TV filter's two sides
+static u32 s_Line[CANVAS_W * 8], s_Dark[CANVAS_W * 8];	// core 0's scratch lines
+static u32 s_TvLine[2][CANVAS_W * 8];			// the TV filter's two sides
 
 static void NtscLine (const void *pSource, unsigned nPhase, u32 *pOut)
 {
-	composite_line (s_pTables, (const unsigned *) pSource, NES_W, nPhase, pOut);
+	composite_line (s_pTables, (const unsigned *) pSource, SharedLoad (s_bTvCanvas) ? CANVAS_W : GAME_W,
+			nPhase, pOut);
 }
 
-// a filtered line (core 1, or the caller without it)
+// a filtered line (core 2, or the caller without it)
 static void TvLineOut (unsigned nRow, const u32 *pFiltered, boolean bRace, unsigned nSide)
 {
-	s_pVideo->DrawGameLine (g_NtscBuf, nRow, s_TvLine[nSide], s_TvDark[nSide]);
+	s_pVideo->DrawNtscLine (nRow, pFiltered, SharedLoad (s_bTvCanvas) ? CANVAS_NTSC_W : GAME_NTSC_W,
+				s_TvLine[nSide]);
 	if (bRace)
 	{
 		RaceRowDone (nRow);
+	}
+}
+
+static u32 *PictureRow (unsigned nLine)
+{
+	return &g_VideoBuf[(GAME_SRC_Y + nLine) * GAME_SRC_PITCH + GAME_SRC_X];
+}
+
+// one line of the picture from its palette indices; the overscan black
+static void ColourLine (unsigned nLine, const u16 *pIdx)
+{
+	const u32 *pPal = nes_palette ();
+	u32 *pDst = PictureRow (nLine);
+	if (g_Pic.bOverscan && (nLine < OVERSCAN_LINES || nLine >= NES_H - OVERSCAN_LINES))
+	{
+		memset (pDst, 0, NES_W * 4);
+		return;
+	}
+	unsigned x0 = 0, x1 = NES_W;
+	if (g_Pic.bOverscan)
+	{
+		x0 = OVERSCAN_SIDE;
+		x1 = NES_W - OVERSCAN_SIDE;
+		for (unsigned x = 0; x < OVERSCAN_SIDE; x++)
+		{
+			pDst[x] = pDst[NES_W - 1 - x] = 0;
+		}
+	}
+	for (unsigned x = x0; x < x1; x++)
+	{
+		pDst[x] = pPal[pIdx[x] & 511];
+	}
+}
+
+// a finished line to the screen: through the TV filter, or straight
+static void LineOut (unsigned nLine, boolean bRace)
+{
+	if (g_Pic.nTvMode != NTSC_OFF)
+	{
+		// the black sides go into the filter too: they blend in like on a TV
+		TvPost (PictureRow (nLine), (s_nTvBurst + nLine) % COMP_PHASES, nLine, bRace);
+	}
+	else
+	{
+		s_pVideo->DrawGameLine (g_VideoBuf, nLine, s_Line, s_Dark);
+		if (bRace)
+		{
+			RaceRowDone (nLine);
+		}
 	}
 }
 
@@ -71,47 +115,14 @@ static void TvLineOut (unsigned nRow, const u32 *pFiltered, boolean bRace, unsig
 // turn against the HDMI output (beam racing)
 static void NesLineHook (int nLine, const uint16_t *pPixels)
 {
-	const int nTop = (int) g_NesSource.nY, nRows = (int) g_NesSource.nH;	// lines shown
 	if (nLine >= 0 && nLine < NES_H)
 	{
-		const u32 *pPal = nes_palette ();
-		u32 *pDst = &g_VideoBuf[nLine * NES_W];		// black sides with overscan
 		memcpy (&g_IdxBuf[nLine * NES_W], pPixels, NES_W * 2);
-		unsigned x0 = 0, x1 = NES_W;
-		if (g_Pic.bOverscan)
-		{
-			x0 = OVERSCAN_SIDE;
-			x1 = NES_W - OVERSCAN_SIDE;
-			for (unsigned x = 0; x < OVERSCAN_SIDE; x++)
-			{
-				pDst[x] = pDst[NES_W - 1 - x] = 0;
-			}
-		}
-		for (unsigned x = x0; x < x1; x++)
-		{
-			pDst[x] = pPal[pPixels[x] & 511];
-		}
-		int nRow = nLine - nTop;
-		if (nRow >= 0 && nRow < nRows)
-		{
-			if (g_Pic.nTvMode != NTSC_OFF)
-			{
-				// the black sides go into the filter too: they blend in like on a TV
-				TvPost (pDst, (s_nTvBurst + (unsigned) nLine) % COMP_PHASES, (unsigned) nRow,
-					g_bRaceFrame, &g_NtscBuf[nLine * NTSC_OUT_W]);
-			}
-			else
-			{
-				s_pVideo->DrawGameLine (g_VideoBuf, (unsigned) nRow, s_Line, s_Dark);
-				if (g_bRaceFrame)
-				{
-					RaceRowDone ((unsigned) nRow);
-				}
-			}
-		}
+		ColourLine ((unsigned) nLine, pPixels);
+		LineOut ((unsigned) nLine, g_bRaceFrame);
 	}
-	int nNext = nLine + 1 - nTop;
-	if (g_bRaceFrame && nNext >= 0 && nNext < nRows)
+	const int nNext = nLine + 1;
+	if (g_bRaceFrame && nNext >= 0 && nNext < NES_H)
 	{
 		RaceRowNext ((unsigned) nNext);
 	}
@@ -119,6 +130,7 @@ static void NesLineHook (int nLine, const uint16_t *pPixels)
 
 void FrameSetup (CScreen *pVideo)
 {
+	static_assert (GAME_W == NES_W && GAME_H == NES_H, "project.h: the NES picture");
 	s_pVideo = pVideo;
 	s_pTables = new u8[composite_size ()];
 	nes_set_line_hook (NesLineHook);
@@ -136,32 +148,52 @@ void FrameSetTvMode (int nMode)
 	}
 }
 
-const TVideoSource &FrameUISource (void)
+void FrameRecolour (void)
 {
-	return g_Pic.nTvMode != NTSC_OFF && s_pTables ? s_UINtscSource : g_UISource;
+	for (unsigned y = 0; y < NES_H; y++)
+	{
+		ColourLine (y, &g_IdxBuf[y * NES_W]);
+	}
 }
 
-// a fixed colour burst phase for each line: the dots do not crawl on still text
-const u32 *FrameUIBuffer (const u32 *pUI)
+void FrameDraw (void)
 {
-	if (g_Pic.nTvMode == NTSC_OFF || !s_pTables)
+	for (unsigned y = 0; y < NES_H; y++)
 	{
-		return pUI;
+		LineOut (y, FALSE);
 	}
-	for (unsigned y = 0; y < UI_H; y++)
+	if (g_Pic.nTvMode != NTSC_OFF)
 	{
-		composite_line (s_pTables, pUI + (UI_SRC_Y + y) * UI_SRC_PITCH + UI_SRC_X, UI_W,
-				y % COMP_PHASES, &s_UINtsc[y * UI_NTSC_W]);
+		TvSync ();
 	}
-	return s_UINtsc;
+}
+
+// the menus: the canvas through the same filter as the game, with a fixed
+// colour burst phase for each line, so the dots do not crawl on still text
+void FrameDrawPicture (u32 *pBuffer, boolean bFilter)
+{
+	if (g_Pic.nTvMode == NTSC_OFF || !bFilter || !s_pTables)
+	{
+		s_pVideo->DrawGame (pBuffer, bFilter, TRUE);
+		return;
+	}
+	TvSync ();
+	SharedStore (s_bTvCanvas, TRUE);
+	for (unsigned y = 0; y < CANVAS_H; y++)
+	{
+		TvPost (&pBuffer[(GAME_SRC_Y - CANVAS_PAD_Y + y) * GAME_SRC_PITCH + GAME_SRC_X - CANVAS_PAD_X],
+			y % COMP_PHASES, y, FALSE);
+	}
+	TvSync ();
+	SharedStore (s_bTvCanvas, FALSE);
 }
 
 // a frame of lines through the TV filter, not drawn (start-up check, in LOG.TXT)
 unsigned FrameTvTimeUs (unsigned nLines)
 {
-	static u32 Out[NTSC_OUT_W];
-	static u32 Line[NES_W];
-	for (unsigned x = 0; x < NES_W; x++)
+	static u32 Out[PROJECT_TV_OUT_W];
+	static u32 Line[CANVAS_W];
+	for (unsigned x = 0; x < CANVAS_W; x++)
 	{
 		Line[x] = x * 0x0B3A57u & 0xFFFFFF;	// many colours, like a busy scene
 	}
@@ -194,4 +226,9 @@ void FrameRun (void)
 	{
 		g_AudioBuf[2*i] = g_AudioBuf[2*i+1] = s_AudioMono[i];
 	}
+}
+
+unsigned FrameMcFailFrame (void)
+{
+	return 0;
 }

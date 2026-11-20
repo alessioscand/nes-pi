@@ -767,6 +767,18 @@ int CInput::CaptureButton (unsigned nSlot) const
 	return -1;
 }
 
+boolean CInput::IsButtonBound (const TBind *pBinds, unsigned nCount, int nButton)
+{
+	for (unsigned i = 0; i < nCount; i++)
+	{
+		if (pBinds[i].nType == BindButton && pBinds[i].nIndex == (u8) nButton)
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 void CInput::RestartDiagnostics (void)
 {
 	for (unsigned i = 0; i < MAX_PADS; i++)

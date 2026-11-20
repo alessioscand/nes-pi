@@ -19,6 +19,7 @@ public:
 
 	// Queue one emulated frame of interleaved stereo samples
 	void WriteFrame (const s16 *pSamples, unsigned nFrames);
+	void Refill (void);			// after a pause: silence up to TARGET
 
 	// Statistics since the last call
 	void GetStats (unsigned *pMinQueue, unsigned *pMaxQueue, unsigned *pUnderruns,

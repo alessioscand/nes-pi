@@ -109,6 +109,9 @@ public:
 	boolean IsReleased (unsigned nSlot) const;
 	// set-up: number of the lowest pressed button (-1 = none)
 	int CaptureButton (unsigned nSlot) const;
+	// set-up: is this button already assigned to one of the binds? (then the
+	// press skips the function being asked for instead of assigning it)
+	static boolean IsButtonBound (const TBind *pBinds, unsigned nCount, int nButton);
 	// save a mapping for this pad model and use it at once
 	void SetMap (unsigned nSlot, const TBind *pBinds);
 	static void DescribeBind (const TBind &rBind, char *pOut, size_t nSize);

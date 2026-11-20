@@ -18,7 +18,6 @@ void CKernel::Benchmark (void)
 
 	boolean bQuiet = m_bQuiet;
 	ApplyVideoMode ();		// measure the real drawing path (filter, HVS)
-	m_Video.SetSource (FrameSource ());
 	m_bQuiet = TRUE;
 
 	// on screen once per second (outside the timings): the game and, above it,
@@ -29,7 +28,7 @@ void CKernel::Benchmark (void)
 		snprintf (Text, sizeof Text, "BENCHMARK  %s %u/%u S", pPhase,
 			  nFrame / 60, nFrames / 60);
 		const CScreen::TTextSpan Span = {Text, UI_WHITE};
-		m_Video.DrawBandText (TRUE, &Span, 1);
+		m_Video.DrawSideText (TRUE, &Span, 1);
 		m_Video.Flip ();
 	};
 
@@ -73,7 +72,7 @@ void CKernel::Benchmark (void)
 		// build options must give the same value
 		for (unsigned p = 0; p < NES_W * NES_H; p++)
 		{
-			nAllHash = (nAllHash ^ g_VideoBuf[p]) * 16777619U;
+			nAllHash = (nAllHash ^ g_IdxBuf[p]) * 16777619U;
 		}
 		if (i % 60 == 0)
 		{
@@ -187,7 +186,7 @@ void CKernel::Benchmark (void)
 	u32 nHash = 2166136261U;
 	for (unsigned i = 0; i < NES_W * NES_H; i++)
 	{
-		nHash = (nHash ^ g_VideoBuf[i]) * 16777619U;
+		nHash = (nHash ^ g_IdxBuf[i]) * 16777619U;
 	}
 	snprintf (Line, sizeof Line, "Check: picture after %u frames = %08X",
 		  BENCH_WARMUP + BENCH_FRAMES, nHash);

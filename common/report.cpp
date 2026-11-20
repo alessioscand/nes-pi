@@ -1,8 +1,10 @@
 /*
- * nes-pi - one statistics line per minute of play in LOG.TXT
+ * The per-minute report in LOG.TXT (CKernel: the project's kernel.h)
  */
+#include "crtfx.h"
 #include "kernel.h"
 #include "frame.h"
+#include "mcline.h"
 #include "pacing.h"
 #include "racing.h"
 #include "stats.h"
@@ -11,17 +13,25 @@
 // statistics windows restart after a pause (menu, credits)
 void CKernel::ResetGameStats (void)
 {
-	g_Stats.nStart = CTimer::GetClockTicks ();
-	g_Stats.Emu.Reset (); g_Stats.Work.Reset (); g_Stats.Period.Reset ();
-	g_Stats.Lag.Reset (); g_Stats.Slack.Reset ();
-	g_Stats.nOverBudget = g_Stats.nMissedVSync = g_Stats.nFrames = 0;
+	g_Stats.Reset (CTimer::GetClockTicks ());
+	g_Stats.bSkipFrame = TRUE;
 	DelayStatsReset ();
 	DelayRestart ();
 	if (g_Race.pRacer)
 	{
-		g_Race.pRacer->Restart ();
+		if (m_bVideoChanged)		// OPTIONS changed the drawing
+		{
+			g_Race.pRacer->SetGeometry (m_Video.GetGameY (), m_Video.GetCPUScale (), m_Video.GetHVSFactor ());
+			g_Race.pRacer->Restart ();
+		}
+		else
+		{
+			g_Race.pRacer->Resume ();
+		}
 		g_Race.pRacer->ResetStats ();
 	}
+	m_bVideoChanged = FALSE;
+	m_Audio.Refill ();
 }
 
 void CKernel::ReportWindow (boolean bFinal)
@@ -57,39 +67,55 @@ void CKernel::ReportWindow (boolean bFinal)
 		  pm, g_Stats.nMissedVSync, qmin, qmax, und, adj,
 		  m_CPUThrottle.GetClockRate () / 1000000, m_CPUThrottle.GetTemperature ());
 	Log (Line, COLOR_TEXT);
-
-	unsigned nErrors = nes_take_frame_errors ();
-	if (nErrors)
+	if (CrtFxActive ())
 	{
-		snprintf (Line, sizeof Line, "   Nestopia: %u frames with an error (%s)", nErrors, nes_last_error ());
-		Log (Line, COLOR_ERR);
+		unsigned nSum, nMax, nCalls;
+		CrtFxTakeStats (&nSum, &nMax, &nCalls);
+		const unsigned nAvg = nCalls ? nSum * 10 / nCalls : 0;
+		const unsigned nFrames = nCalls / GAME_H ? nCalls / GAME_H : 1;
+		const unsigned f = nSum / nFrames;
+		snprintf (Line, sizeof Line, "   %s: per line %u.%u us avg, %u us max | per frame %u.%u ms, %s",
+			  FilterShort (m_Video.GetFilter ()), nAvg / 10, nAvg % 10, nMax,
+			  f / 1000, (f % 1000) / 100, TvWorkerAlive () ? "on core 2" : "without core 2");
+		Log (Line, COLOR_TEXT);
 	}
-
-	// TV filter: per frame (filtering vs drawing on the screen)
-	unsigned nFilterUs, nDrawUs, nTvLines;
-	TvTakeStats (&nFilterUs, &nDrawUs, &nTvLines);
-	if (nTvLines >= 224)
+	if (m_Video.GetFilter () == FILTER_COMPOSITE)
 	{
-		unsigned nFrames = nTvLines / g_NtscSource.nH ? nTvLines / g_NtscSource.nH : 1;
+		unsigned nFilterUs, nDrawUs, nLines;
+		TvTakeStats (&nFilterUs, &nDrawUs, &nLines);
+		unsigned nFrames = nLines / GAME_H ? nLines / GAME_H : 1;
 		unsigned f = nFilterUs / nFrames, d = nDrawUs / nFrames;
-		snprintf (Line, sizeof Line,
-			  "   TV filter: per frame %u.%u ms filtering + %u.%u ms drawing, on 1 core",
-			  f / 1000, (f % 1000) / 100, d / 1000, (d % 1000) / 100);
+		snprintf (Line, sizeof Line, "   COMPOSITE: per frame %u.%u ms filtering + %u.%u ms drawing, %s",
+			  f / 1000, (f % 1000) / 100, d / 1000, (d % 1000) / 100,
+			  TvWorkerAlive () ? "on core 2" : "without core 2");
 		Log (Line, COLOR_TEXT);
 	}
 
+	static boolean s_bFailLogged = FALSE;
+	if (McFailed () && !s_bFailLogged)
+	{
+		Log ("Multicore: core 1 stopped answering, single core from now on", COLOR_ERR);
+		char Fail[160];
+		McFailText (Fail, sizeof Fail, FrameMcFailFrame ());
+		Log (Fail, COLOR_ERR);
+		s_bFailLogged = TRUE;
+	}
 	if (g_Stats.Lag.nCount > 0)
 	{
-		char la[16], lm[16], lx[16], sa[16], sm[16];
+		char la[16], lm[16], lx[16], Ready[64] = "";
 		FormatMs (la, sizeof la, g_Stats.Lag.Avg ());
 		FormatMs (lm, sizeof lm, g_Stats.Lag.nMin);
 		FormatMs (lx, sizeof lx, g_Stats.Lag.nMax);
-		FormatMs (sa, sizeof sa, g_Stats.Slack.Avg ());
-		FormatMs (sm, sizeof sm, g_Stats.Slack.nMin);
+		if (g_Stats.Slack.nCount > 0)	// only measured on frames that were not beam raced
+		{
+			char sa[16], sm[16];
+			FormatMs (sa, sizeof sa, g_Stats.Slack.Avg ());
+			FormatMs (sm, sizeof sm, g_Stats.Slack.nMin);
+			snprintf (Ready, sizeof Ready, " | ready before vsync %s/%s ms avg/min", sa, sm);
+		}
 		snprintf (Line, sizeof Line,
-			  "   lag: %u inputs, report->scan-out %s/%s/%s ms avg/min/max | "
-			  "ready before vsync %s/%s ms avg/min",
-			  g_Stats.Lag.nCount, la, lm, lx, sa, sm);
+			  "   lag: %u inputs, report->scan-out %s/%s/%s ms avg/min/max%s",
+			  g_Stats.Lag.nCount, la, lm, lx, Ready);
 		Log (Line, COLOR_TEXT);
 	}
 
@@ -126,17 +152,11 @@ void CKernel::ReportWindow (boolean bFinal)
 		else if (g_Delay.nCfg == 0)	snprintf (Mode, sizeof Mode, "off");
 		else				snprintf (Mode, sizeof Mode, "fixed %d ms", g_Delay.nCfg);
 		snprintf (Line, sizeof Line,
-			  "   frame delay %s: %s/%s/%s ms avg/min/max, vsyncs missed with delay %u",
-			  Mode, da, dm, dx, g_Delay.nMisses);
+			  "   frame delay %s: %s/%s/%s ms avg/min/max, vsyncs missed with delay %u | frame starts at line %u",
+			  Mode, da, dm, dx, g_Delay.nMisses, PHASE_LINE);
 		Log (Line, g_Delay.nMisses ? COLOR_ERR : COLOR_TEXT);
 	}
 
-	g_Stats.Emu.Reset ();
-	g_Stats.Work.Reset ();
-	g_Stats.Period.Reset ();
-	g_Stats.Lag.Reset ();
-	g_Stats.Slack.Reset ();
-	g_Stats.nOverBudget = g_Stats.nMissedVSync = g_Stats.nFrames = 0;
-	g_Stats.nStart = CTimer::GetClockTicks ();
+	g_Stats.Reset (CTimer::GetClockTicks ());
 	DelayStatsReset ();
 }

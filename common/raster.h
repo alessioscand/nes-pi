@@ -1,25 +1,12 @@
 /*
- * where the HDMI picture is being read, for beam racing (Pi 3 and 4)
+ * Where the HVS is reading the framebuffer, for beam racing
  *
- * The Pi's hardware scaler (HVS) builds the HDMI picture one line at a time,
- * reading our framebuffer as it goes; SCALER_DISPSTATX(channel) bits 11:0 say
- * which output line it is composing (Linux: vc4_crtc_get_scanout_position).
- * This is exactly what beam racing needs: a framebuffer line must be written
- * before the HVS composes the first output line that uses it.
- *
- * CRaster finds the HVS channel that drives the HDMI mode, then measures for
- * a few dozen frames, polling the register as fast as it can:
- *   - the frame period and the time of one output line;
- *   - for every output line L, how long after the frame origin the HVS
- *     starts composing it (the first lines are composed early, during the
- *     vertical blank, to fill the HVS FIFO: measured, not guessed).
- * The frame origin is where the line counter would be 0 if it ran at the
- * same pace as during the active picture. From then on everything is time
- * (ARM generic timer ticks), and the origin is corrected while playing from
- * the register readings (Sample()).
- *
- * Plain C++, no Circle classes: the same file is built on Linux with a
- * simulated HVS for testing (test/race_sim.cpp).
+ * SCALER_DISPSTATX bits 11:0: the output line being composed. CRaster finds
+ * the HDMI channel and measures, for a few dozen frames, the frame period,
+ * the line time and when each output line starts (the first ones early, to
+ * fill the FIFO). Then everything is time (ARM generic timer), the frame
+ * origin corrected while playing (Sample()).
+ * Plain C++, also built on Linux with a simulated HVS (test/race_sim.cpp).
  */
 #ifndef RASTER_H
 #define RASTER_H

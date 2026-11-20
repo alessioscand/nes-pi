@@ -4,7 +4,7 @@
  *
  * The class is implemented by area: kernel.cpp (start-up, power off),
  * console.cpp, games.cpp, settings.cpp, menus.cpp, gameloop.cpp, bench.cpp,
- * report.cpp, racing.cpp.
+ * common/report.cpp, racing.cpp.
  */
 #ifndef KERNEL_H
 #define KERNEL_H
@@ -127,8 +127,7 @@ private:
 	void SavePads (void);
 
 	// menus.cpp
-	void SnapshotForUI (void);
-	void ShowUIFrame (boolean bWait = TRUE, const char *pTopMessage = 0);
+	void ShowUIFrame (boolean bWait = TRUE);
 	unsigned RunList (unsigned nSel);
 	void RunSystemMenu (void);
 	int ChoosePad (void);
@@ -150,13 +149,14 @@ private:
 	unsigned PlayFrame (boolean bRace, boolean bScreenshot, unsigned *pT0, boolean *pOddFrame);
 	boolean PlayMenu (const u32 Pad[2]);
 	void PlayDrawBands (void);
+	void UpdateBezel (void);
 	void PlayStatusLine (unsigned nNow, unsigned *pNextDeadline);
 	const char *SaveScreenshot (void);
 
 	// bench.cpp
 	void Benchmark (void);
 
-	// report.cpp, racing.cpp
+	// common/report.cpp, racing.cpp
 	void ResetGameStats (void);
 	void ReportWindow (boolean bFinal);
 	void SetupBeamRacing (void);
@@ -186,6 +186,7 @@ private:
 	boolean			m_bVideoOK;
 	boolean			m_bSDOK;
 	boolean			m_bQuiet;	// UI/emulation running: console not drawn
+	boolean			m_bVideoChanged;	// ApplyVideoMode since the beam racer last restarted
 
 	// console lines
 	char			m_Lines[MaxLines][MaxLineLen];
@@ -205,6 +206,7 @@ private:
 	// configuration (nespi.cfg); the picture's settings are in g_Pic (frame.h)
 	unsigned		 m_nFilter;	// FILTER_*
 	boolean			 m_bHVS;	// FALSE: scaler=cpu
+	unsigned		 m_nBezel;	// OPTIONS > BEZEL: BEZEL_GRID or 0 (black)
 
 	// frame pacing and the status line
 	boolean			 m_bVSync;	// FALSE: the firmware's vsync does not block

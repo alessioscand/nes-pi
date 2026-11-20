@@ -1,41 +1,17 @@
 /*
- * nes-pi - the menus: game list, options, controls set-up, power off, credits
+ * nes-pi - menus: game list, OPTIONS, CONTROLS, power off countdown, credits
  */
 #include "kernel.h"
 #include "frame.h"
 
-// the NES picture in the menus' layout (304x224): 8 lines off the top and
-// bottom (as most TVs did), centred, for the darkened copy behind the menus
-void CKernel::SnapshotForUI (void)
+void CKernel::ShowUIFrame (boolean bWait)
 {
-	static u32 Buf[UI_SRC_PITCH * UI_SRC_LINES];
-	memset (Buf, 0, sizeof Buf);
-	// the game behind the menus is sharp too, like the menus (whatever the TV filter)
-	for (unsigned y = 0; y < UI_H; y++)
-	{
-		const u32 *s = &g_VideoBuf[(y + 8) * NES_W];
-		u32 *d = &Buf[(y + UI_SRC_Y) * UI_SRC_PITCH + UI_SRC_X + (UI_W - NES_W) / 2];
-		memcpy (d, s, NES_W * 4);
-	}
-	m_pUI->SnapshotGame (Buf);
-}
-
-void CKernel::ShowUIFrame (boolean bWait, const char *pTopMessage)
-{
-	m_Video.SetRacing (FALSE);
-	m_Video.SetSource (FrameUISource ());
-	m_Video.DrawGame (FrameUIBuffer (m_pUI->GetBuffer ()), TRUE);	// with the TV filter, like the game
-	if (pTopMessage && pTopMessage[0])
-	{
-		// in the black band above the picture, like the in-game messages
-		const CScreen::TTextSpan Span = {pTopMessage, UI_ERR};
-		m_Video.DrawBandText (TRUE, &Span, 1);
-	}
-	else
-	{
-		m_Video.DrawBandText (TRUE, 0, 0);	// no status line or message over menus
-	}
-	m_Video.DrawBandText (FALSE, 0, 0);
+	UpdateBezel ();
+	// a menu over the grid (no game behind it): no filter, so that its grid
+	// and the border's are one
+	FrameDrawPicture (m_pUI->GetBuffer (), m_nLoaded >= 0 && !m_pUI->ShowsGrid ());
+	m_Video.DrawSideText (FALSE, 0, 0);	// no status line or message over menus
+	m_Video.DrawSideText (TRUE, 0, 0);
 	m_Video.Flip ();
 	if (!bWait)
 	{
@@ -57,6 +33,7 @@ unsigned CKernel::RunList (unsigned nSel)
 	unsigned nRepeat = 0;
 	unsigned nFrame = 0;
 	unsigned nTicks = 0;		// frames since the selection changed
+	unsigned nShown = nSel;
 
 	while (1)
 	{
@@ -91,33 +68,32 @@ unsigned CKernel::RunList (unsigned nSel)
 		{
 			nRepeat = 0;
 		}
-		unsigned nOld = nSel;
 		if ((nMove & BTN_UP) && nSel > 0)			nSel--;
 		if ((nMove & BTN_DOWN) && nSel + 1 < m_nGames)		nSel++;
 		if (nNew & BTN_LEFT)	nSel = nSel >= 8 ? nSel - 8 : 0;
 		if (nNew & BTN_RIGHT)	nSel = nSel + 8 < m_nGames ? nSel + 8 : m_nGames - 1;
-		nTicks = nSel == nOld ? nTicks + 1 : 0;
 
 		if (nNew & (BTN_A | BTN_START))
 		{
 			return nSel;
 		}
-		if (nNew & BTN_SELECT)
+		if (nNew & (BTN_SELECT | BTN_D))
 		{
 			RunSystemMenu ();
 			n = ~0u;		// wait for release
 		}
 		nPrev = n;
 
-		const char *pMsg = m_pInput->GetPadCount () == 0 ? "CONNECT A USB GAMEPAD" : "";
-		m_pUI->DrawList (m_pGames, m_nGames, nSel, "", m_nLoaded >= 0, nTicks);
-		ShowUIFrame (TRUE, pMsg);
+		nTicks = nSel == nShown ? nTicks + 1 : 0;
+		nShown = nSel;
+		m_pUI->DrawList (m_pGames, m_nGames, nSel, m_nLoaded >= 0, nTicks);
+		ShowUIFrame ();
 	}
 }
 
 void CKernel::RunSystemMenu (void)
 {
-	enum { SmTv, SmPalette, SmSprites, SmControls, SmPower, SmCount };
+	enum { SmTv, SmPalette, SmSprites, SmBezel, SmControls, SmPower, SmCount };
 
 	unsigned nSel = 0;
 	u32 nPrev = ~0u;
@@ -125,6 +101,7 @@ void CKernel::RunSystemMenu (void)
 	int nOldTv = g_Pic.nTvMode;
 	boolean bOldScan = g_Pic.bTvScanlines;
 	boolean bOldSprites = g_Pic.bUnlimSprites;
+	unsigned nOldBezel = m_nBezel;
 	const char *pMsg = "";
 	unsigned nFrame = 0;
 
@@ -191,7 +168,7 @@ void CKernel::RunSystemMenu (void)
 				ApplyPalette ();
 				if (m_nLoaded >= 0)
 				{
-					SnapshotForUI ();		// the paused game in the new colours
+					m_pUI->SnapshotGame (g_VideoBuf);	// the paused game in the new colours
 				}
 				break;
 			}
@@ -199,6 +176,10 @@ void CKernel::RunSystemMenu (void)
 			case SmSprites:
 				g_Pic.bUnlimSprites = !g_Pic.bUnlimSprites;
 				nes_set_unlimited_sprites (g_Pic.bUnlimSprites);
+				break;
+
+			case SmBezel:
+				m_nBezel = m_nBezel ? 0 : BEZEL_GRID;	// GRID or OFF; drawn by the next frame
 				break;
 
 			case SmControls:
@@ -232,7 +213,7 @@ void CKernel::RunSystemMenu (void)
 			break;
 		}
 
-		static const char *Labels[SmCount] = {"TV FILTER", "PALETTE", "SPRITE FLICKER", "CONTROLS", "POWER OFF"};
+		static const char *Labels[SmCount] = {"TV FILTER", "PALETTE", "SPRITE FLICKER", "BEZEL", "CONTROLS", "POWER OFF"};
 		TMenuItem Items[SmCount];
 		for (unsigned i = 0; i < SmCount; i++)
 		{
@@ -245,6 +226,7 @@ void CKernel::RunSystemMenu (void)
 		static const char *PaletteLabels[4] = {"NESTOPIA", "CONSUMER", "SONY TV", "CUSTOM"};
 		Items[SmPalette].pValue = PaletteLabels[g_Pic.nPalette & 3];
 		Items[SmSprites].pValue = g_Pic.bUnlimSprites ? "REDUCED" : "ORIGINAL";
+		Items[SmBezel].pValue = BezelName (m_nBezel, TRUE);
 
 		static const TButtonHint Hints[2] = {{'A', "CHANGE"}, {'B', "BACK"}};
 		m_pUI->DrawPanelMenu (m_nLoaded >= 0, "OPTIONS", Items, SmCount, nSel, pMsg, UI_VALUE,
@@ -253,12 +235,13 @@ void CKernel::RunSystemMenu (void)
 	}
 
 	if (g_Pic.nPalette != nOldPalette || g_Pic.bUnlimSprites != bOldSprites
-	    || g_Pic.nTvMode != nOldTv || g_Pic.bTvScanlines != bOldScan)
+	    || g_Pic.nTvMode != nOldTv || g_Pic.bTvScanlines != bOldScan || m_nBezel != nOldBezel)
 	{
 		SaveConfig ();
 		char Line[140];
-		snprintf (Line, sizeof Line, "New settings: TV filter %s, palette %s, sprites %s",
-			  TvName (g_Pic.nTvMode), PaletteName (g_Pic.nPalette), g_Pic.bUnlimSprites ? "unlimited" : "8 per line");
+		snprintf (Line, sizeof Line, "New settings: TV filter %s, palette %s, sprites %s, bezel %s",
+			  TvName (g_Pic.nTvMode), PaletteName (g_Pic.nPalette), g_Pic.bUnlimSprites ? "unlimited" : "8 per line",
+			  BezelName (m_nBezel, FALSE));
 		Log (Line, COLOR_TEXT);
 	}
 }
@@ -304,22 +287,24 @@ int CKernel::ChoosePad (void)
 	return -1;
 }
 
-// Asks for A B START SELECT in turn on one pad (directions are automatic),
-// then saves on its own. A button already used is ignored; Esc on the
-// keyboard cancels. (pads.cfg keeps the C and D slots of the shared input
-// code: they stay unset here, and are ignored if an older set-up has them.)
+// Asks for A B SELECT START in turn on one pad (directions are automatic),
+// then saves on its own; a button already assigned skips the function. Esc
+// on the keyboard cancels. (pads.cfg keeps the C and D slots of the shared
+// input code: they stay unset here.)
 boolean CKernel::RunMapping (unsigned nSlot, boolean bOverGame)
 {
-	static const char *Names[4] = {"A", "B", "START", "SELECT"};
-	static const unsigned Slot[4] = {MAP_FIRST_BUTTON + 0, MAP_FIRST_BUTTON + 1,
-					 MAP_FIRST_BUTTON + 4, MAP_FIRST_BUTTON + 5};
+	// slots in the order of the logical bits: A B C D START SELECT;
+	// asked in the order A B SELECT START
+	enum { Slots = 6 };
+	static const char *Names[Slots] = {"A", "B", "C", "D", "START", "SELECT"};
+	static const unsigned SlotOfStep[4] = {0, 1, 5, 4};
 	const unsigned nSteps = 4;
 
 	TBind Binds[MAP_COUNT];
 	memset (Binds, 0, sizeof Binds);
-	static char Values[4][16];
-	const char *pValues[4];
-	for (unsigned i = 0; i < 4; i++)
+	static char Values[Slots][16];
+	const char *pValues[Slots];
+	for (unsigned i = 0; i < Slots; i++)
 	{
 		Values[i][0] = '\0';
 		pValues[i] = Values[i];
@@ -370,28 +355,23 @@ boolean CKernel::RunMapping (unsigned nSlot, boolean bOverGame)
 			int nButton = m_pInput->CaptureButton (nSlot);
 			if (nButton >= 0)
 			{
-				boolean bUsed = FALSE;
-				for (unsigned i = 0; i < nStep; i++)
+				const unsigned nCur = SlotOfStep[nStep];
+				TBind &B = Binds[MAP_FIRST_BUTTON + nCur];
+				if (!CInput::IsButtonBound (Binds, MAP_COUNT, nButton))
 				{
-					if (Binds[Slot[i]].nIndex == (u8) nButton)
-					{
-						bUsed = TRUE;
-					}
-				}
-				if (!bUsed)
-				{
-					TBind &B = Binds[Slot[nStep]];
 					B.nType = BindButton;
 					B.nIndex = (u8) nButton;
 					B.nValue = 0;
-					CInput::DescribeBind (B, Values[nStep], sizeof Values[nStep]);
-					nStep++;
 				}
+				// a button already assigned skips this function: it stays unassigned
+				CInput::DescribeBind (B, Values[nCur], sizeof Values[nCur]);
+				nStep++;
 				bWaitRelease = TRUE;
 			}
 		}
 
-		m_pUI->DrawMapping (bOverGame, Title, (int) nStep, pValues, Footer);
+		m_pUI->DrawMapping (bOverGame, Title, nStep < nSteps ? (int) SlotOfStep[nStep] : Slots,
+				    pValues, Footer);
 		ShowUIFrame ();
 	}
 
@@ -399,7 +379,8 @@ boolean CKernel::RunMapping (unsigned nSlot, boolean bOverGame)
 	SavePads ();
 	for (unsigned i = 0; i < nSteps; i++)
 	{
-		snprintf (Line, sizeof Line, "  %s = %s", Names[i], Values[i]);
+		unsigned k = SlotOfStep[i];
+		snprintf (Line, sizeof Line, "  %s = %s", Names[k], Values[k]);
 		Log (Line, COLOR_TEXT);
 	}
 	Log ("  controls saved to nespi/pads.cfg", COLOR_TEXT);
@@ -408,7 +389,7 @@ boolean CKernel::RunMapping (unsigned nSlot, boolean bOverGame)
 	// "SAVED" for one second
 	for (unsigned f = 0; f < 60; f++)
 	{
-		m_pUI->DrawMapping (bOverGame, Title, (int) nSteps, pValues, Footer);
+		m_pUI->DrawMapping (bOverGame, Title, Slots, pValues, Footer);
 		ShowUIFrame ();
 	}
 	return TRUE;
@@ -416,8 +397,8 @@ boolean CKernel::RunMapping (unsigned nSlot, boolean bOverGame)
 
 boolean CKernel::PowerOffCountdown (void)
 {
-	// 3 seconds, B cancels; drawn over whatever the UI buffer shows
-	static u32 Saved[UI_SRC_PITCH * UI_SRC_LINES];
+	// 3 seconds, B cancels: a box alone, over the paused game or the grid
+	static u32 Saved[GAME_SRC_PITCH * GAME_SRC_LINES];	// the menu, for B
 	memcpy (Saved, m_pUI->GetBuffer (), sizeof Saved);
 	u32 nPrev = ~0u;
 	for (unsigned f = 0; f < 180; f++)
@@ -433,9 +414,8 @@ boolean CKernel::PowerOffCountdown (void)
 		}
 		char Line[24];
 		snprintf (Line, sizeof Line, "POWER OFF IN %u", 3 - f / 60);
-		memcpy (m_pUI->GetBuffer (), Saved, sizeof Saved);
 		static const TButtonHint Cancel = {'B', "CANCEL"};
-		m_pUI->DrawBox (Line, "", &Cancel);
+		m_pUI->DrawBox (m_nLoaded >= 0, Line, "", &Cancel);
 		ShowUIFrame ();
 	}
 	return TRUE;

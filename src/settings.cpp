@@ -26,25 +26,16 @@ void CKernel::ApplyPalette (void)
 		g_Pic.nPalette = NES_PALETTE_NESTOPIA;
 		nes_set_palette (g_Pic.nPalette, 0, 0);
 	}
-	const u32 *pPal = nes_palette ();
-	for (unsigned y = 0; y < NES_H; y++)
-	{
-		for (unsigned x = 0; x < NES_W; x++)
-		{
-			boolean bSide = g_Pic.bOverscan && (x < OVERSCAN_SIDE || x >= NES_W - OVERSCAN_SIDE);
-			g_VideoBuf[y * NES_W + x] = bSide ? 0 : pPal[g_IdxBuf[y * NES_W + x] & 511];
-		}
-	}
+	FrameRecolour ();
 }
 
 const char *CKernel::FilterShort (unsigned nFilter)
 {
 	switch (nFilter)
 	{
-	case FILTER_SCAN_LIGHT:	 return "SCAN-L";
-	case FILTER_SCAN_MEDIUM: return "SCAN-M";
-	case FILTER_SCAN_STRONG: return "SCAN-S";
-	default:		 return "NOFLT";
+	case FILTER_FAST:	return "SCAN";
+	case FILTER_COMPOSITE:	return "NTSC";
+	default:		return "NOFLT";
 	}
 }
 
@@ -64,10 +55,9 @@ const char *CKernel::FilterName (unsigned nFilter)
 {
 	switch (nFilter)
 	{
-	case FILTER_SCAN_LIGHT:	 return "SCANLINES_LIGHT";
-	case FILTER_SCAN_MEDIUM: return "SCANLINES";
-	case FILTER_SCAN_STRONG: return "SCANLINES_STRONG";
-	default:		 return "NONE";
+	case FILTER_FAST:	return "SCANLINES";
+	case FILTER_COMPOSITE:	return "NTSC";
+	default:		return "NONE";
 	}
 }
 
@@ -84,22 +74,22 @@ void CKernel::VideoModeTag (char *pOut, size_t nSize)
 	}
 }
 
-// TV FILTER: RGB = sharp pixels with light scanlines; RF / COMPOSITE /
-// S-VIDEO = blargg's filter (no scanlines: the CPU draws at least 2x anyway)
+// TV FILTER: RGB = sharp pixels with scanlines (FAST); RF / COMPOSITE /
+// S-VIDEO = blargg's filter, each with its own look
 void CKernel::SetTvMode (void)
 {
-	m_nFilter = g_Pic.nTvMode == NTSC_OFF && g_Pic.bTvScanlines ? FILTER_SCAN_LIGHT : FILTER_NONE;
+	m_nFilter = g_Pic.nTvMode != NTSC_OFF ? FILTER_COMPOSITE
+		  : g_Pic.bTvScanlines ? FILTER_FAST : FILTER_NONE;
 	FrameSetTvMode (g_Pic.nTvMode);
 	ApplyVideoMode ();
 }
 
 void CKernel::ApplyVideoMode (void)
 {
-	if (!m_Video.SetGameMode (m_nFilter, m_bHVS, g_Pic.nTvMode != NTSC_OFF))
+	if (!m_Video.SetGameMode (m_nFilter, m_bHVS))
 	{
 		Fatal (PROJECT_ERR_FB, "cannot set up the game framebuffer");
 	}
-	m_Video.SetSource (g_UISource);
 	char Tag[8];
 	VideoModeTag (Tag, sizeof Tag);
 	char Line[MaxLineLen];
@@ -107,8 +97,11 @@ void CKernel::ApplyVideoMode (void)
 		  Tag, m_Video.GetWidth (), m_Video.GetHeight (),
 		  m_Video.GetFBWidth (), m_Video.GetFBHeight (), m_Video.GetScale (),
 		  m_Video.GetHVSFactor (), m_Video.GetScale () / m_Video.GetHVSFactor (),
-		  FilterName (m_Video.GetFilter ()), m_bHVS ? "" : " (scaler=cpu)");
+		  m_Video.GetFilter () == FILTER_COMPOSITE ? TvName (g_Pic.nTvMode) : FilterName (m_Video.GetFilter ()),
+		  m_bHVS ? "" : " (scaler=cpu)");
 	Log (Line, COLOR_TEXT);
+	UpdateBezel ();
+	m_bVideoChanged = TRUE;
 	snprintf (Line, sizeof Line, "Video: pixel order %s (%u), red in the %s byte%s",
 		  m_Video.GetPixelOrder () ? "RGB" : "BGR", m_Video.GetPixelOrder (),
 		  m_Video.IsRedLow () ? "low" : "high", "");
@@ -169,12 +162,8 @@ void CKernel::LoadConfig (void)
 	else if (strstr (Text, "palette=sony"))		g_Pic.nPalette = NES_PALETTE_SONY;
 	else if (strstr (Text, "palette=custom"))	g_Pic.nPalette = NES_PALETTE_CUSTOM;
 	if (strstr (Text, "sprites=unlimited"))		g_Pic.bUnlimSprites = TRUE;
-	if (strstr (Text, "overscan=off"))
-	{
-		g_Pic.bOverscan = FALSE;
-		g_NesSource.nH = g_NtscSource.nH = NES_H;
-		g_NesSource.nY = g_NtscSource.nY = 0;
-	}
+	if (strstr (Text, "overscan=off"))		g_Pic.bOverscan = FALSE;
+	if (strstr (Text, "bezel=off"))			m_nBezel = 0;
 	if (strstr (Text, "tvfilter=rf"))		g_Pic.nTvMode = NTSC_RF;
 	else if (strstr (Text, "tvfilter=svideo"))	g_Pic.nTvMode = NTSC_SVIDEO;
 	else if (strstr (Text, "tvfilter=composite"))	g_Pic.nTvMode = NTSC_COMPOSITE;
@@ -206,8 +195,8 @@ void CKernel::LoadConfig (void)
 	if (g_Delay.nCfg < 0)		snprintf (Delay, sizeof Delay, "auto");
 	else if (g_Delay.nCfg == 0)	snprintf (Delay, sizeof Delay, "off");
 	else				snprintf (Delay, sizeof Delay, "%d ms", g_Delay.nCfg);
-	snprintf (Line, sizeof Line, "Settings: USB polling %s%s, overscan %s, frame delay %s, beam racing %s",
-		  UsbPollName (), g_nUSBInterruptPollMs ? " Hz" : "",
+	snprintf (Line, sizeof Line, "Settings: bezel %s, USB polling %s%s, overscan %s, frame delay %s, beam racing %s",
+		  BezelName (m_nBezel, FALSE), UsbPollName (), g_nUSBInterruptPollMs ? " Hz" : "",
 		  g_Pic.bOverscan ? "hidden" : "shown", Delay,
 		  g_Race.nCfg ? "on" : "off");
 	Log (Line, COLOR_TEXT);
@@ -227,6 +216,7 @@ void CKernel::SaveConfig (void)
 	{
 		strcat (Text, "overscan=off\r\n");
 	}
+	strcat (Text, m_nBezel ? "bezel=grid\r\n" : "bezel=off\r\n");
 	if (g_Pic.nPalette != NES_PALETTE_NESTOPIA)
 	{
 		strcat (Text, "palette=");
@@ -253,6 +243,13 @@ void CKernel::SaveConfig (void)
 		strcat (Text, Line);
 	}
 	WriteTextFile (CFG_PATH, Text);
+}
+
+// around the picture, OPTIONS > BEZEL: the grid (GRID) or black (OFF); no
+// title or buttons for the NES games yet
+void CKernel::UpdateBezel (void)
+{
+	m_Video.SetBezel (m_nBezel & BEZEL_GRID, 0, m_nLoaded < 0 ? 0 : 1 + (unsigned) m_nLoaded);
 }
 
 void CKernel::LoadPads (void)

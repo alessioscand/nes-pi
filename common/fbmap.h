@@ -1,11 +1,8 @@
-// fbmap.h - map the framebuffer as write-combining memory
+// fbmap.h - the framebuffer as write-combining memory
 //
-// Circle maps all GPU memory (framebuffer included) as Device-nGnRE: every
-// store goes out to the bus on its own. Linux maps framebuffers as
-// Normal Non-cacheable instead, so the core merges the stores into bursts.
-// This changes only the pages of our framebuffer, at run time, without
-// touching Circle (shared with NES-Pi): MAIR_EL1 index 3 (unused by Circle)
-// becomes Normal Non-cacheable and the framebuffer pages point to it.
+// Circle maps it as Device-nGnRE (one bus write per store); as Linux, we map
+// its pages Normal Non-cacheable (stores merged into bursts) through
+// MAIR_EL1 index 3, unused by Circle, at run time.
 
 #ifndef _fbmap_h
 #define _fbmap_h

@@ -67,6 +67,12 @@ void CBeamRacer::Restart (void)
 	m_nWindowFrames = m_nWindowLate = 0;
 }
 
+void CBeamRacer::Resume (void)
+{
+	m_bStarted = FALSE;
+	m_nWindowFrames = m_nWindowLate = 0;
+}
+
 void CBeamRacer::ResetStats (void)
 {
 	m_Stats.nFrames = m_Stats.nLateFrames = m_Stats.nLateRows = m_Stats.nSkips = 0;

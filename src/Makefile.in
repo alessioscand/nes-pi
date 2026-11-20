@@ -3,10 +3,10 @@
 #
 CIRCLEHOME = @CIRCLEHOME@
 
-OBJS	= main.o kernel.o console.o games.o settings.o menus.o gameloop.o bench.o \
+OBJS	= main.o kernel.o console.o games.o gametable.o settings.o menus.o gameloop.o bench.o \
 	  report.o racing.o frame.o \
-	  video.o ui.o fontdata.o ziphelp.o nes_sys.o miniz.o composite.o \
-	  audio.o input.o raster.o race.o profile.o fbmap.o stats.o pacing.o tvcore.o
+	  video.o ui.o theme.o font_matinee.o ziphelp.o nes_sys.o miniz.o composite.o \
+	  audio.o input.o raster.o race.o profile.o fbmap.o stats.o pacing.o tvcore.o crtfx.o gameinfo.o
 
 # Nestopia (C++ with exceptions and the standard library) is built apart,
 # with its own flags, into libnst.a: Circle's rules (no exceptions, no
@@ -29,6 +29,8 @@ DEFINE += -DNDEBUG -DMINIZ_NO_STDIO -DMINIZ_NO_TIME
 CFLAGS += -fno-math-errno -Wextra -Wshadow -Wno-unused-parameter	# Circle's headers have unused parameters
 
 include $(CIRCLEHOME)/Rules.mk
+
+crtfx.o: OPTIMIZE = -O3 -ffast-math
 
 # ---- Nestopia --------------------------------------------------------------
 NSTDIR	 = nst

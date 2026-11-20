@@ -1,12 +1,7 @@
 /*
- * sampling profiler for the benchmark
- *
- * A hardware timer interrupt (ARM_IRQ_TIMER1) fires every few hundred
- * microseconds and records the interrupted program counter. Samples are
- * collected per frame and added to two tables of 16-byte code buckets: one
- * for all frames, one for slow frames only. The tables are written to
- * PROFILE.TXT as "address all slow" lines; addresses are resolved to
- * function names offline with the matching kernel .elf file.
+ * Sampling profiler for the benchmark: a timer IRQ (ARM_IRQ_TIMER1) records
+ * the interrupted PC in 16-byte buckets, for all frames and for slow ones;
+ * PROFILE.TXT lists "address all slow" (resolve with the kernel's .elf).
  */
 #ifndef PROFILE_H
 #define PROFILE_H

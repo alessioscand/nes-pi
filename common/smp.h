@@ -1,9 +1,7 @@
 /*
- * Work shared between CPU cores: shared variables, events, the ARM timer
- *
- * Aligned loads and stores up to 64 bits are single-copy atomic on ARMv8.
- * SharedLoad / SharedStore also keep the compiler from caching or merging
- * them; SharedAcquire / SharedRelease order the data published with them.
+ * Between cores: shared variables, events, the ARM timer. Aligned accesses
+ * up to 64 bits are atomic; SharedLoad / SharedStore stop the compiler from
+ * caching them, SharedAcquire / SharedRelease order what they publish.
  */
 #ifndef SMP_H
 #define SMP_H

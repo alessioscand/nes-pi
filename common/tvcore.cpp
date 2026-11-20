@@ -1,9 +1,6 @@
 /*
- * The TV filter's core (see tvcore.h)
- *
- * One ring of lines, written by the producer only at the head and by the TV
- * filter's core only at the tail: release and acquire on the two counters,
- * dsb + sev to wake the other side from wfe.
+ * The TV filter's core (tvcore.h): a ring of lines, head written by the
+ * producer, tail by the filter's core; dsb + sev wake the other side.
  */
 #include "tvcore.h"
 #include "smp.h"
@@ -125,7 +122,10 @@ void TvPost (const void *pSource, unsigned nPhase, unsigned nRow, boolean bRace,
 	if (!TvWorkerAlive ())
 	{
 		static TTvLine Line;
-		memcpy (Line.Src, pSource, sizeof Line.Src);
+		if (pSource != 0)
+		{
+			memcpy (Line.Src, pSource, sizeof Line.Src);
+		}
 		Line.nPhase = nPhase;
 		Line.nRow = nRow;
 		Line.bRace = bRace;
@@ -141,7 +141,10 @@ void TvPost (const void *pSource, unsigned nPhase, unsigned nRow, boolean bRace,
 		return;
 	}
 	TTvLine *e = &s_Ring[h & (RING - 1)];
-	memcpy (e->Src, pSource, sizeof e->Src);
+	if (pSource != 0)			// 0: the filter reads the line itself
+	{
+		memcpy (e->Src, pSource, sizeof e->Src);
+	}
 	e->nPhase = nPhase;
 	e->nRow = nRow;
 	e->bRace = bRace;
