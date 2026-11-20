@@ -1,8 +1,12 @@
 /*
  * nes-pi - its look: colours, fonts, logo, credits and the grid (theme.h)
  */
+#include "project.h"
 #include "theme.h"
 #include "fonts.h"
+
+// the grid: a checkerboard of 16-pixel squares in black and dark grey
+#define BG_CELL		16
 
 // the logo, 30x15 drawn twice as big: N "NES", P "PI", W border, . plate
 static const char *const s_Logo[] =
@@ -51,23 +55,25 @@ const TUITheme g_Theme =
 	0x7A8290, TRUE,				// the list's bottom row
 	s_Logo, sizeof s_Logo / sizeof s_Logo[0], 2, s_LogoKeys, s_LogoColors,
 	s_Credits, sizeof s_Credits / sizeof s_Credits[0],
-	{0, 0}, 0x3C3C3C, 0,			// no frame: the dither
+	{BG_CELL, BG_CELL}, 0x000000, 0,	// the moat: an invisible frame a square out
 	{0, 0},
-	0,					// the grid from the screen's centre
+	BG_CELL,				// whole squares from the frame's corners
 	FALSE,					// thin lines
 	0
 };
 
-// the grid: a checkerboard of 16-pixel squares in black and grey
-#define BG_CELL		16
 
 u32 ThemeGrid (int x, int y, int M, int nHalfW, int nHalfH)
 {
 	(void) nHalfW;
 	(void) nHalfH;
-	const int P = BG_CELL * M;
-	const int cx = (x + P * 256) / P, cy = (y + P * 256) / P;
-	return (cx + cy) & 1 ? 0x3C3C3C : 0x000000;
+	// squares from the moat's bottom right corner; the columns mirrored
+	// about its middle, so that both sides match
+	const int P = BG_CELL * M, nCols = (PROJECT_WIDTH + 2 * BG_CELL) / BG_CELL;
+	int cx = (x + P * 256) / P - 256 + nCols / 2;
+	const int cy = (y + P * 256) / P;
+	if (cx < 0) cx = -1 - cx;
+	return (cx + cy) & 1 ? 0x1A1A1A : 0x000000;
 }
 
 u32 ThemeGround (void)

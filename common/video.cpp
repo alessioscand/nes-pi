@@ -278,10 +278,14 @@ boolean CVideoOut::SetGameMode (unsigned nFilter, boolean bAllowHVS)
 	m_nFrame = g_Theme.nFrame[nSize];
 	// 1080p with a fabric: the frame half a small diamond further out, the
 	// fabric still through the corners it had
-	const int nPad = m_nFrame > 0 && nSize == 0 ? g_Theme.nFabric / 8 : 0;
+	const boolean bMoat = g_Theme.nFrameColour == ThemeGround ();	// an invisible frame
+	const int nPad = m_nFrame > 0 && nSize == 0 && !bMoat ? g_Theme.nFabric / 8 : 0;
 	m_nFrame += nPad;
 	const int nRoom = (int) (m_nGameY / m_nM) - 2;
-	if (m_nFrame > nRoom) m_nFrame = nRoom > 0 ? nRoom : 0;
+	if (m_nFrame > nRoom && !bMoat)		// a moat may go off screen
+	{
+		m_nFrame = nRoom > 0 ? nRoom : 0;
+	}
 	const int nBase = m_nFrame > nPad ? m_nFrame - nPad : m_nFrame;
 	m_nSideGap = (m_nFrame > 0 ? (unsigned) (m_nFrame + 1) * m_nM + m_nGap / 2 : m_nGap)
 		   + (unsigned) g_Theme.nSideShift[nSize] * m_nM;
@@ -304,7 +308,16 @@ boolean CVideoOut::SetGameMode (unsigned nFilter, boolean bAllowHVS)
 		m_nFrameL = m_nFrameR + 1;		// the mirror image
 		m_nFrameT = m_nFrameB + 1;
 		m_nGridX0 = m_nGridY0 = 0;
-		if (m_nFrame > 0 && g_Theme.nFabric > 0)
+		if (m_nFrame > 0 && bMoat)
+		{
+			// a moat: no line, the same width on both sides, the grid's
+			// squares from its corner
+			m_nFrameR = m_nFrameL = (GAME_W / 2 + nBase) * M;
+			m_nFrameB = m_nFrameT = (GAME_H / 2 + nBase) * M;
+			m_nGridX0 = m_nFrameR;
+			m_nGridY0 = m_nFrameB;
+		}
+		else if (m_nFrame > 0 && g_Theme.nFabric > 0)
 		{
 			// the small diamonds' lines (a quarter of P): at 3x the large
 			// ones would push the left and top lines up to 2 diamonds out
@@ -713,6 +726,11 @@ u32 CVideoOut::FramePixel (unsigned x, unsigned y, int d) const
 	const boolean bInY = Y > -m_nFrameT - t && Y < m_nFrameB + t;
 	const boolean bLine =    (bInY && ((X >= m_nFrameR && X < m_nFrameR + t) || (X <= -m_nFrameL && X > -m_nFrameL - t)))
 			      || (bInX && ((Y >= m_nFrameB && Y < m_nFrameB + t) || (Y <= -m_nFrameT && Y > -m_nFrameT - t)));
+	if (g_Theme.nFrameColour == ThemeGround ())	// a moat: empty, the grid's whole squares outside
+	{
+		const boolean bIn = X >= -m_nFrameL && X < m_nFrameR && Y >= -m_nFrameT && Y < m_nFrameB;
+		return ToFb (bIn ? ThemeGround () : GridColour (x, y));
+	}
 	if (bLine)
 	{
 		return ToFb (g_Theme.nFrameColour);
