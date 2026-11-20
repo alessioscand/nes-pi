@@ -34,7 +34,7 @@ struct TMenuItem
 
 struct TButtonHint
 {
-	char		 cButton;	// 'A' 'B' 'C' 'D'
+	char		 cButton;	// 'A' 'B' 'C' 'D', 'S' = SELECT (written)
 	const char	*pText;
 };
 

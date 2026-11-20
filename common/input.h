@@ -34,6 +34,9 @@
 #define MAX_PADS	PROJECT_PLAYERS
 
 // Controls that can be assigned (bit n of a mapping = logical bit n above)
+#if PROJECT_BUTTONS != 2 && PROJECT_BUTTONS != 4 && PROJECT_BUTTONS != 6
+#error "PROJECT_BUTTONS: 2, 4 or 6"
+#endif
 #if PROJECT_BUTTONS == 6
 #define MAP_COUNT	12	// UP DOWN LEFT RIGHT A B C D START SELECT E F
 #define MAP_E		10	// E and F can be skipped (pads with 4 buttons)

@@ -24,8 +24,8 @@
 /* Players: one pad each (common/input) */
 #define PROJECT_PLAYERS	2
 
-/* Buttons besides the directions, START and SELECT: A B C D (C D = turbo) */
-#define PROJECT_BUTTONS	4
+/* Buttons besides the directions, START and SELECT: A B */
+#define PROJECT_BUTTONS	2
 
 /* Each emulated frame starts with the vertical blank, after line 239 */
 #define PROJECT_PHASE_LINE	240

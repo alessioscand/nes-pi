@@ -299,13 +299,26 @@ void CUI::Buttons (int y, const TButtonHint *pHints, unsigned nHints)
 	for (unsigned i = 0; i < nHints; i++)
 	{
 		nW += 13 + 4 + (int) strlen (pHints[i].pText) * 8 + (i ? nGap : 0);
+		if (pHints[i].cButton == 'S')
+		{
+			nW += 6 * 8 + 4 - 13;		// the word instead of the icon
+		}
 	}
 	int x = (UI_W - nW) / 2;
 	for (unsigned i = 0; i < nHints; i++)
 	{
-		ButtonIcon (x, y, pHints[i].cButton);
-		Text (x + 17, y + 3, pHints[i].pText, HINT_TEXT);
-		x += 17 + (int) strlen (pHints[i].pText) * 8 + nGap;
+		int nIconW = 13;
+		if (pHints[i].cButton == 'S')
+		{
+			Text (x, y + 3, "SELECT", g_Theme.nValue);
+			nIconW = 6 * 8 + 4;
+		}
+		else
+		{
+			ButtonIcon (x, y, pHints[i].cButton);
+		}
+		Text (x + nIconW + 4, y + 3, pHints[i].pText, HINT_TEXT);
+		x += nIconW + 4 + (int) strlen (pHints[i].pText) * 8 + nGap;
 	}
 }
 
@@ -452,7 +465,8 @@ void CUI::DrawList (const TGameEntry *pGames, unsigned nCount, unsigned nSel,
 		Text (38, y0 + 147, Info, T.nListInfo, 1, T.bListInfoInListFont);
 	}
 
-	static const TButtonHint Hints[2] = {{'A', "START GAME"}, {'D', "OPTIONS"}};
+	// OPTIONS: D, or SELECT with two buttons (nes-pi)
+	static const TButtonHint Hints[2] = {{'A', "START GAME"}, {PROJECT_BUTTONS == 2 ? 'S' : 'D', "OPTIONS"}};
 	Buttons (y0 + nListH + MENU_GAP, Hints, 2);
 }
 
@@ -682,12 +696,15 @@ void CUI::DrawMapping (boolean bOverGame, const char *pTitle, int nStep,
 
 	// nStep is the slot being asked for, in the order of the logical bits
 	// (A B C D START SELECT, then E F with 6 buttons), all of them = done;
-	// the rows: A B C D (E F) SELECT START, the order they are asked in
+	// the rows: A B (C D) (E F) SELECT START, the order they are asked in
 	static const char *const Names[8] = {"A", "B", "C", "D", "START", "SELECT", "E", "F"};
 	static const char cButton[8] = {'A', 'B', 'C', 'D', 0, 0, 'E', 'F'};
 #if PROJECT_BUTTONS == 6
 	static const int SlotOfRow[] = {0, 1, 2, 3, 6, 7, 5, 4};
 	const int nRowY = y0 + 52, nPitch = 13, nPressY = y0 + 30;
+#elif PROJECT_BUTTONS == 2
+	static const int SlotOfRow[] = {0, 1, 5, 4};
+	const int nRowY = y0 + 75, nPitch = 15, nPressY = y0 + 32;
 #else
 	static const int SlotOfRow[] = {0, 1, 2, 3, 5, 4};
 	const int nRowY = y0 + 60, nPitch = 15, nPressY = y0 + 32;
@@ -722,7 +739,8 @@ void CUI::DrawMapping (boolean bOverGame, const char *pTitle, int nStep,
 		}
 		else
 		{
-			Text (x0 + 20, y + 3, i == 4 ? "START" : "SELECT / COIN", bSel ? UI_WHITE : T.nDim);
+			Text (x0 + 20, y + 3, i == 4 ? "START" : PROJECT_BUTTONS == 2 ? "SELECT" : "SELECT / COIN",
+			      bSel ? UI_WHITE : T.nDim);
 		}
 		const char *pValue = bSel ? "?" : pValues[i];
 		if (pValue && pValue[0])
