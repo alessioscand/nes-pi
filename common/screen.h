@@ -83,7 +83,7 @@ public:
 	virtual void ClearRows (unsigned nBuffer, unsigned nFirstRow, unsigned nRows, u32 nColor) = 0;
 
 	// The visible GAME_W x GAME_H area into the back buffer; bFilter = FALSE:
-	// no scanlines (the menus with no game behind them)
+	// no TV filter (the menus with no game behind them)
 	// bCanvas: the menus' whole canvas, beyond the picture if it is wider
 	virtual void DrawGame (const u32 *pSource, boolean bFilter = TRUE, boolean bCanvas = FALSE) = 0;
 	// one line of it, with the caller's scratch lines (GAME_W * 8 pixels each):

@@ -3,7 +3,8 @@
  *
  * Console mode: the framebuffer at the HDMI resolution. Game mode: integer
  * scaling S = m * k, m by the CPU, k by the HVS (square pixels; k = 1 if no
- * useful factor). Scanlines (75%, 50%, 25%) while drawing, no added lag.
+ * useful factor). TV FILTER while drawing, no added lag: FAST here, RGB,
+ * CRT and COMPOSITE on core 2 (crtfx, tvcore).
  * The border (BEZEL): black or the theme's grid, with a game its title and
  * buttons (1080p), drawn once. Status and messages in the side columns,
  * drawn by core 0 only when they change, over the border only.
@@ -145,7 +146,7 @@ private:
 	}
 
 	u32	*m_pLine;			// one scaled game line (cached memory)
-	u32	*m_pDark;			// the same line darkened (scanlines)
+	u32	*m_pDark;			// the same line at 50% (FAST)
 	unsigned m_nPixelOrder;			// reported by the firmware
 	unsigned m_nWCPages;
 	boolean	 m_bRLow;			// red in the low byte of a pixel
