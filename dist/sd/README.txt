@@ -3,18 +3,11 @@ nes-pi 1.1.0 - Bare-metal NES emulator for Raspberry Pi 3 and 4
 
 WHAT'S NEW IN 1.1.0
 
-  - The look of its siblings s16-pi, neo-pi and m92-pi: new menus and
-    game list, and a grid around the picture. OPTIONS > BEZEL turns it
-    off, down to black.
-  - The status line and the messages sit beside the picture, never over
-    the game.
-  - When setting up a pad, the functions are asked in the order A, B,
-    SELECT, START.
-  - In nespi/nespi.cfg, a line starting with # is a comment.
-  - Only two pads are used: a third one is ignored.
-  - LOG.TXT reports it if the emulator stops a frame with an error.
-  - To update a card, copy the new files over the old ones: games,
-    saves, settings and pads.cfg in nespi are kept and work as before.
+  - New menus and game list, and a grid around the picture (OPTIONS >
+    BEZEL turns it off).
+  - The status line and the messages sit beside the picture.
+  - Setting up a pad: the order is now A, B, SELECT, START, and a
+    function can be skipped.
 
 SET-UP
 
@@ -26,6 +19,9 @@ SET-UP
      yet).
   4. Connect a USB gamepad and the display (on a Pi 4, HDMI 0, next to the
      power socket). Insert the card and switch on.
+
+  To update a card, copy the new files over the old ones: games, saves,
+  settings and pads.cfg in nespi are kept and work as before.
 
 START-UP
 
@@ -46,12 +42,16 @@ START-UP
 
 SETTING UP THE CONTROLS
 
+  Although wireless gamepads are supported, wired ones are preferable for
+  maximum responsiveness.
+
   The first time a pad model is connected, the CONTROLS screen opens by
   itself. Press the button you want for each function, in this order: A,
   B, SELECT, START. After the last one, the set-up is saved (SAVED).
 
-  Directions need no set-up: the d-pad, hat and left stick always work. A
-  button already assigned is ignored. On a keyboard, Esc cancels.
+  Directions need no set-up: the d-pad, hat and left stick always work. To
+  skip a function, press a button already assigned: it stays unassigned
+  (shown as -). On a keyboard, Esc cancels.
 
   The set-up applies to every pad of the same model and is stored in
   nespi/pads.cfg. To redo it: OPTIONS (Select in the game list) >
@@ -89,33 +89,30 @@ OPTIONS MENU (Select in the game list, or from the in-game menu)
   A or Left/Right changes a setting, B goes back. Settings are stored in
   nespi/nespi.cfg. The menus go through the TV filter too, like the game.
 
-  TV FILTER     OFF / RGB / S-VIDEO / COMPOSITE / RF: Video filters.
-                OFF: sharp square pixels. RGB: light scanlines.
-                S-VIDEO, COMPOSITE and RF use blargg's NTSC filter:
-                a 4:3 picture as a TV of the time showed it.
+  TV FILTER     OFF: sharp square pixels. RGB: scanlines.
+                S-VIDEO, COMPOSITE and RF use blargg's NTSC filter: the
+                picture as it looked on grandma's TV.
                 S-VIDEO: soft colours.
-                COMPOSITE: also the colour fringes, the dots crawling
-                along the edges and the shimmer, and the dithering blended
-                into shades, as many games expected.
-                RF: the aerial cable on grandma's TV, every defect at its
-                worst, for true nostalgia.
+                COMPOSITE: colour fringes, dots crawling along the edges,
+                shimmer, and dithering blended into shades, as many games
+                expected.
+                RF: the aerial cable, every defect at its worst.
                 Each line is filtered as soon as it is drawn, on its own
                 CPU core: no added lag, and beam racing still works.
   PALETTE       The NES colours: NESTOPIA (Nestopia's own), CONSUMER (a TV
-                of the time), SONY TV (the Sony CXA2025AS decoder of many
-                US TVs), CUSTOM (your own: rename any .pal file of 64 or
-                512 colours to palette.pal and put it in nespi; CUSTOM
-                appears only if the file is there).
+                of the time), SONY TV (the Sony decoder of many US TVs),
+                CUSTOM (any .pal file of 64 or 512 colours, renamed
+                palette.pal and put in nespi; shown only if it is there).
   SPRITE FLICKER
-                ORIGINAL: like the console, at most 8 sprites on a line,
-                so when more share a line games make them flicker.
-                REDUCED: no limit, much less flicker. A few games use the
-                limit on purpose, to hide something behind the edge of a
-                door or a pipe.
+                ORIGINAL: at most 8 sprites per line, as on the console,
+                so crowded lines flicker. REDUCED: no limit, much less
+                flicker (a few games use the limit to hide things behind
+                a door or a pipe).
   BEZEL         The space around the picture: GRID (a checkerboard, kept
                 clear around the picture; the default) or OFF (black).
   CONTROLS      Set up a pad (with several pads, press a button on the one
-                to set up).
+                to set up). To skip a function, press a button already
+                assigned.
   POWER OFF     As in the in-game menu.
 
 STATUS LINE (Select + Down)
@@ -154,12 +151,11 @@ LOW INPUT LAG
 
 PIXEL PERFECT
 
-  Integer scaling only (square pixels, never stretched), with black
-  borders. 1080p: 1024x896 picture. 720p: 768x672 picture.
+  Integer scaling only (square pixels, never stretched). 1080p: 1024x960
+  picture. 720p: 768x720.
 
-  Overscan: like a TV of the time, the 8 lines at the top and at the
-  bottom are hidden and the 8 pixels on each side are black: many games
-  leave rubbish there.
+  Overscan: as on a TV of the time, the 8 lines at the top and bottom and
+  8 pixels on each side are black: many games leave rubbish there.
 
 TESTING OPTIONS (in nespi/nespi.cfg, one per line)
 
