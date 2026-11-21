@@ -112,8 +112,8 @@ OPTIONS MENU (Select in the game list, or from the in-game menu)
                 REDUCED: no limit, much less flicker. A few games use the
                 limit on purpose, to hide something behind the edge of a
                 door or a pipe.
-  BEZEL         The space around the picture: GRID (a grid and a frame;
-                the default) or OFF (black).
+  BEZEL         The space around the picture: GRID (a checkerboard, kept
+                clear around the picture; the default) or OFF (black).
   CONTROLS      Set up a pad (with several pads, press a button on the one
                 to set up).
   POWER OFF     As in the in-game menu.
