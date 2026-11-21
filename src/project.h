@@ -5,7 +5,7 @@
 #define PROJECT_H
 
 #define PROJECT_NAME	"nes-pi"
-#define PROJECT_VERSION	"1.2.0"
+#define PROJECT_VERSION	"1.1.0"
 
 /* The emulated picture: all 256 x 240 (the overscan is drawn black), in a
    buffer as wide as the menus' canvas (304, common/screen.h) */

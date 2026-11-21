@@ -1,13 +1,18 @@
-nes-pi 1.0.1 - Bare-metal NES emulator for Raspberry Pi 3 and 4
+nes-pi 1.1.0 - Bare-metal NES emulator for Raspberry Pi 3 and 4
 ============================================================================
 
-WHAT'S NEW IN 1.0.1
+WHAT'S NEW IN 1.1.0
 
+  - The look of its siblings s16-pi, neo-pi and m92-pi: new menus and
+    game list, and a grid around the picture. OPTIONS > BEZEL turns it
+    off, down to black.
+  - The status line and the messages sit beside the picture, never over
+    the game.
+  - When setting up a pad, the functions are asked in the order A, B,
+    SELECT, START.
   - In nespi/nespi.cfg, a line starting with # is a comment.
   - Only two pads are used: a third one is ignored.
   - LOG.TXT reports it if the emulator stops a frame with an error.
-  - Alignment of the code shared with the other projects (neo-pi,
-    m92-pi).
   - To update a card, copy the new files over the old ones: games,
     saves, settings and pads.cfg in nespi are kept and work as before.
 
@@ -43,7 +48,7 @@ SETTING UP THE CONTROLS
 
   The first time a pad model is connected, the CONTROLS screen opens by
   itself. Press the button you want for each function, in this order: A,
-  B, START, SELECT. After the last one, the set-up is saved (SAVED).
+  B, SELECT, START. After the last one, the set-up is saved (SAVED).
 
   Directions need no set-up: the d-pad, hat and left stick always work. A
   button already assigned is ignored. On a keyboard, Esc cancels.
@@ -107,22 +112,30 @@ OPTIONS MENU (Select in the game list, or from the in-game menu)
                 REDUCED: no limit, much less flicker. A few games use the
                 limit on purpose, to hide something behind the edge of a
                 door or a pipe.
+  BEZEL         The space around the picture: GRID (a grid and a frame;
+                the default) or OFF (black).
   CONTROLS      Set up a pad (with several pads, press a button on the one
                 to set up).
   POWER OFF     As in the in-game menu.
 
 STATUS LINE (Select + Down)
 
-  Below the picture:
+  In the left column, at the bottom:
 
-    60 FPS   LOAD 20%   39 C   RACE 2.8   1080P 4X CPU+HVS
+    FPS 60
+    LOAD 20%
+    CPU 39
+    RCE 2.8
+    1080P 4X
+    CPU+HVS
 
   - LOAD: how much of each frame is used (green; yellow from 75%; red
     above 95%). With beam racing, the time spent waiting for the HDMI
     output between lines is left out.
-  - RACE: the ms from reading the pads to sending the top of the picture
+  - CPU: the processor's temperature, in degrees C.
+  - RCE: the ms from reading the pads to sending the top of the picture
     to the TV. Without beam racing, DLY instead: the frame delay in ms.
-  - 4X HVS: scaled by the Pi's hardware scaler. CPU+HVS: the CPU draws the
+  - HVS: scaled by the Pi's hardware scaler. CPU+HVS: the CPU draws the
     scanlines at 2x and the scaler doubles it. CPU: all by the CPU.
 
 LOW INPUT LAG
