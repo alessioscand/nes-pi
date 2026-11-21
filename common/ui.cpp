@@ -227,6 +227,28 @@ void CUI::CText (int y, const char *s, u32 c, unsigned nTall, boolean bList)
 	Text ((UI_W - (int) strlen (s) * 8) / 2, y, s, c, nTall, bList);
 }
 
+// the list's selected title (double height) centred in the band (rows
+// y0 + 68..88) on the list font's capitals and digits (J and Q may hang
+// lower), with their shadow
+int CUI::SelectedY (int y0) const
+{
+	int nTop = 7, nBottom = 0;
+	for (const char *p = "0123456789ABCDEFGHIKLMNOPRSTUVWXYZ"; *p != '\0'; p++)
+	{
+		const unsigned ch = (unsigned char) *p;
+		for (int r = 0; r < 8; r++)
+		{
+			if (m_pListFont[ch - 32][r])
+			{
+				if (r < nTop) nTop = r;
+				if (r > nBottom) nBottom = r;
+			}
+		}
+	}
+	const int nH = (nBottom - nTop + 1) * 2 + 1;
+	return y0 + 68 + (21 - nH) / 2 - nTop * 2;
+}
+
 // The pad's buttons: a 13 px disc in the button's colour with its letter, as
 // on a Neo Geo pad: A red, B yellow, C green, D blue (E violet, F orange)
 static const u32 ButtonColor[6] = {0xDC2828, 0xF0C81E, 0x28B446, 0x325AE6, 0x9646D2, 0xF07828};
@@ -415,16 +437,17 @@ void CUI::DrawList (const TGameEntry *pGames, unsigned nCount, unsigned nSel,
 		const char *pName = pGames[i].Name;
 		if (k == 0)
 		{
+			const int yT = SelectedY (y0);
 			const int nExtra = (int) strlen (pName) * 8 - nListW;
 			if (nExtra <= 0)
 			{
-				CText (y0 + 69, pName, UI_WHITE, 2, TRUE);
+				CText (yT, pName, UI_WHITE, 2, TRUE);
 			}
 			else
 			{
 				m_nClipX0 = nListX;
 				m_nClipX1 = nListX + nListW;
-				Text (nListX - ScrollOffset (nExtra, nTicks), y0 + 69, pName, UI_WHITE, 2, TRUE);
+				Text (nListX - ScrollOffset (nExtra, nTicks), yT, pName, UI_WHITE, 2, TRUE);
 				m_nClipX0 = 0;
 				m_nClipX1 = UI_W;
 			}

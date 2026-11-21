@@ -105,6 +105,8 @@ private:
 	static u32 ButtonColorOf (char cButton);
 
 private:
+	int SelectedY (int y0) const;		// the selected title's row
+
 	u32	m_Buf[GAME_SRC_PITCH * GAME_SRC_LINES] __attribute__ ((aligned (64)));
 	u32	m_Snapshot[GAME_SRC_PITCH * GAME_SRC_LINES];
 	const unsigned char (*m_pListFont)[8];
