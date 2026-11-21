@@ -398,9 +398,9 @@ void CUI::DrawList (const TGameEntry *pGames, unsigned nCount, unsigned nSel,
 	Fill (33, y0 + nListH - 2, UI_W - 66, 1, T.nFrame1);
 	Fill (33, y0 + 1, 1, nListH - 2, T.nFrame1);
 	Fill (UI_W - 34, y0 + 1, 1, nListH - 2, T.nFrame1);
-	Fill (34, y0 + 67, UI_W - 68, 23, T.nBand);	// frame to frame (inside its 2 pixels), lit edges
-	Fill (34, y0 + 67, UI_W - 68, 1, T.nTitle);
-	Fill (34, y0 + 89, UI_W - 68, 1, T.nTitle);
+	Fill (34, y0 + 67, UI_W - 68, 23, T.nBand);	// frame to frame (inside its 2 pixels), outlined
+	Fill (34, y0 + 67, UI_W - 68, 1, T.nFrame2);
+	Fill (34, y0 + 89, UI_W - 68, 1, T.nFrame2);
 
 	// the selected title, twice as tall (a long one scrolls in the band),
 	// 4 above and below it, fading away
